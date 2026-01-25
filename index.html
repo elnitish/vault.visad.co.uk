@@ -1,0 +1,748 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=1400">
+    <title>VisaD Vault</title>
+    <link rel="icon" type="image/png" href="favicon.png">
+
+    <!-- DNS prefetch & preconnect for faster loading -->
+    <link rel="dns-prefetch" href="https://cdnjs.cloudflare.com">
+    <link rel="dns-prefetch" href="https://code.jquery.com">
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
+    <link rel="preconnect" href="https://code.jquery.com" crossorigin>
+
+    <!-- Inline critical CSS for instant render -->
+    <style>
+        body {
+            margin: 0;
+            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+            background: #fafbfc;
+        }
+
+        #login-container {
+            display: none;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: #ffffff;
+        }
+
+        #app-container {
+            display: none;
+        }
+    </style>
+
+    <!-- Main CSS -->
+    <link rel="stylesheet" href="style.css">
+
+    <!-- Non-critical CSS loaded async -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
+        media="print" onload="this.media='all'" />
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/slim-select/2.8.2/slimselect.min.css" rel="stylesheet"
+        media="print" onload="this.media='all'">
+
+    <!-- Fallback for browsers without JS -->
+    <noscript>
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+        <link href="https://cdnjs.cloudflare.com/ajax/libs/slim-select/2.8.2/slimselect.min.css" rel="stylesheet">
+    </noscript>
+</head>
+
+<body>
+    <!-- Instant session check - runs before other scripts -->
+
+
+    <!-- Login Container REMOVED -->
+
+    <!-- Main App Container -->
+    <div id="app-container" style="display: block;">
+        <div class="page-header">
+            <!-- Row 1: Sort + Search | Actions -->
+            <div class="header-top-row">
+                <div class="search-and-filter-container">
+                    <button id="sort-by-td-btn" class="header-btn" title="Sort by Travel Date">TD &darr;</button>
+                    <button id="sort-by-doc-date-btn" class="header-btn" title="Sort by Doc Date">APD &darr;</button>
+                    <div class="search-wrapper">
+                        <input type="text" id="search-input" placeholder="Search... (Ctrl+Enter for all)">
+                        <div class="search-menu-wrapper">
+                            <button id="search-menu-btn" class="search-menu-btn" title="Search Options">
+                                <i class="fas fa-chevron-down"></i>
+                            </button>
+                            <div id="search-dropdown" class="search-dropdown">
+
+                                <button id="load-all-header-btn" class="search-dropdown-item">
+                                    <i class="fas fa-database"></i> Load All Records
+                                </button>
+                                <div class="search-dropdown-divider"></div>
+                                <div class="search-dropdown-info">
+                                    <span id="records-count-info">Loading...</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="header-actions-container">
+                    <button id="info-btn" class="header-btn info-btn-header" title="Visa Information"><i
+                            class="fas fa-info-circle"></i></button>
+                    <button id="ac-btn" class="header-btn" title="Accounts"
+                        onclick="window.location.href='accounts.html'">AC</button>
+                    <button id="bat-btn" class="header-btn" title="BAT"
+                        onclick="window.location.href='bat.html'">BAT</button>
+                    <button id="app-btn" class="header-btn" title="Wait App" onclick="window.location.href='app.html'"
+                        style="background: #f59e0b; color: #fff;">APP</button>
+                    <button id="appointment-notify-btn" class="header-btn" title="Appointment Notify"
+                        onclick="window.location.href='https://vault.visad.co.uk/notify/'"
+                        style="background: #10b981; color: #fff;">
+                        <i class="fas fa-bell blink-icon"></i> Appointment Notify
+                    </button>
+                    <button id="admin-panel-btn" class="header-btn"><i class="fas fa-user-shield"></i> Admin
+                        Panel</button>
+                    <div id="uk-time-container" class="header-btn"></div>
+                    <button id="theme-toggle-btn" class="header-btn" title="Toggle Theme"><i
+                            class="fas fa-moon"></i></button>
+                    <button id="add-traveler-btn" class="add-btn"><i class="fas fa-plus"></i> Add New</button>
+                    <!-- Logout button removed -->
+                </div>
+            </div>
+            <!-- Row 2: Refresh + Filters + Doc/APPw Toggle -->
+            <div class="header-filter-row">
+                <div class="filter-left-section">
+                    <button id="refresh-btn" class="header-btn" title="Refresh List"><i
+                            class="fas fa-sync-alt"></i></button>
+                    <div id="filter-container"></div>
+                </div>
+                <div class="view-toggle-container">
+                    <button id="doc-view-btn" class="view-toggle-btn">
+                        <i class="fas fa-file-alt"></i> Doc
+                    </button>
+                    <button id="appw-view-btn" class="view-toggle-btn active">
+                        <i class="fas fa-calendar-check"></i> APPw
+                    </button>
+                </div>
+            </div>
+            <!-- Row 3: Country Scroller -->
+            <div class="country-scroller-wrapper">
+                <button class="country-scroll-btn left" id="country-scroll-left"><i
+                        class="fas fa-chevron-left"></i></button>
+                <div class="country-scroller" id="country-scroller"></div>
+                <button class="country-scroll-btn right" id="country-scroll-right"><i
+                        class="fas fa-chevron-right"></i></button>
+            </div>
+        </div>
+
+        <!-- Main container for all traveler records -->
+        <div id="records-container"></div>
+    </div>
+
+    <!-- Admin Panel Modal -->
+    <div id="admin-modal-backdrop" style="display: none;">
+        <div id="admin-modal">
+            <div class="modal-header">
+                <h2>Admin Panel</h2>
+                <button id="modal-close-btn">&times;</button>
+            </div>
+            <div class="modal-content">
+                <div class="modal-tabs">
+                    <button class="tab-btn active" data-tab="users">User Management</button>
+                    <button class="tab-btn" data-tab="logs">Audit Log</button>
+                    <button class="tab-btn" data-tab="urls">URL Management</button>
+                </div>
+                <!-- User Management Tab -->
+                <div id="users-tab" class="tab-content active">
+                    <div class="user-management-grid">
+                        <div class="user-list-container">
+                            <h3>Existing Users</h3>
+                            <div id="user-list"></div>
+                        </div>
+                        <div class="add-user-container">
+                            <h3>Add New User</h3>
+                            <form id="add-user-form">
+                                <input type="text" id="new-username" name="username" placeholder="Username" required>
+                                <input type="password" id="new-password" name="password" placeholder="Password"
+                                    required>
+                                <select id="new-user-role" name="role">
+                                    <option value="user">User</option>
+                                    <option value="admin">Admin</option>
+                                </select>
+                                <button type="submit">Create User</button>
+                                <div id="add-user-message"></div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+                <!-- Audit Log Tab -->
+                <div id="logs-tab" class="tab-content">
+                    <h3>Activity Log</h3>
+                    <div class="log-container">
+                        <table id="log-table">
+                            <thead>
+                                <tr>
+                                    <th>Timestamp</th>
+                                    <th>User</th>
+                                    <th>Record</th>
+                                    <th>Field</th>
+                                    <th>Old Value</th>
+                                    <th>New Value</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+                <!-- URL Management Tab -->
+                <div id="urls-tab" class="tab-content">
+                    <div class="url-management-grid">
+                        <div class="url-list-container">
+                            <h3>Existing URLs</h3>
+                            <div id="url-list" class="log-container"></div>
+                        </div>
+                        <div class="add-url-container">
+                            <h3 id="url-form-title">Add New URL</h3>
+                            <!-- Added enctype for file upload -->
+                            <form id="add-url-form" enctype="multipart/form-data">
+                                <input type="hidden" id="url-id" name="id">
+                                <select id="new-url-country" name="country" required></select>
+                                <select id="new-url-center" name="visa_center"></select>
+                                <input type="text" id="new-url-link" name="url" placeholder="Full Visa Information URL"
+                                    required>
+
+                                <div class="form-separator">--- Application Form ---</div>
+                                <input type="text" id="new-app-form-link" name="application_form_url"
+                                    placeholder="Application Form URL (Link)">
+                                <div class="or-divider">- OR -</div>
+                                <input type="file" id="new-app-form-file" name="application_form_file"
+                                    accept=".pdf,.doc,.docx">
+                                <small style="display:block; margin-bottom:10px; color:#666;">Upload a file to override
+                                    the link above.</small>
+
+                                <div class="form-actions">
+                                    <button type="submit" id="url-submit-btn">Add URL</button>
+                                    <button type="button" id="url-cancel-btn" style="display: none;">Cancel
+                                        Edit</button>
+                                </div>
+                                <div id="add-url-message"></div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- History Modal -->
+    <div id="history-modal-backdrop" style="display: none;">
+        <div id="history-modal">
+            <div class="modal-header">
+                <h2 id="history-modal-title">Record History</h2>
+                <button id="history-modal-close-btn">&times;</button>
+            </div>
+            <div class="modal-content">
+                <div id="history-content" class="log-container">
+                    <table id="history-log-table">
+                        <thead>
+                            <tr>
+                                <th>Timestamp</th>
+                                <th>User</th>
+                                <th>Field</th>
+                                <th>Old Value</th>
+                                <th>New Value</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Document Verification Modal -->
+    <div id="doc-verify-modal-backdrop" style="display: none;">
+        <div id="doc-verify-modal">
+            <div class="modal-header doc-verify-header">
+                <h2 id="doc-verify-modal-title">Document Verification</h2>
+                <div class="doc-verify-actions">
+                    <button id="download-pdf-btn" class="action-btn download-btn" title="Download as PDF">
+                        <i class="fas fa-file-pdf"></i> Download PDF
+                    </button>
+                    <button id="send-email-btn" class="action-btn email-btn" title="Send Email to Client">
+                        <i class="fas fa-envelope"></i> Send Email
+                    </button>
+                    <button id="doc-verify-modal-close-btn">&times;</button>
+                </div>
+            </div>
+            <div class="modal-content">
+                <div id="doc-verify-content" class="doc-verify-container">
+                    <!-- Content will be dynamically loaded here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Invoice Modal -->
+    <div id="invoice-modal-backdrop" style="display: none;">
+        <div id="invoice-modal">
+            <div class="modal-header">
+                <!-- <h2>Invoice</h2> -->
+
+                <!-- [NEW] Container for Last Sent History -->
+                <div id="invoice-history-placeholder"
+                    style="margin-left: auto; margin-right: 15px; font-size: 12px; color: #666; text-align: right;">
+                </div>
+
+                <div class="invoice-actions">
+                    <button id="save-invoice-btn" class="action-btn save-btn" title="Download Invoice as PDF">
+                        <i class="fas fa-file-pdf"></i> Download PDF
+                    </button>
+                    <button id="email-invoice-btn" class="action-btn email-btn" title="Email Invoice to Client">
+                        <i class="fas fa-envelope"></i> Email Invoice
+                    </button>
+                    <button id="email-t-invoice-btn" class="action-btn email-btn" title="Email T-Invoice">
+                        <i class="fas fa-paper-plane"></i> Email T-Invoice
+                    </button>
+                    <button id="invoice-modal-close-btn">&times;</button>
+                </div>
+            </div>
+            <div class="modal-content">
+                <div id="invoice-content" class="invoice-modal-container">
+                    <!-- Invoice design will be loaded here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Accounts Modal - Invoice Management -->
+    <div id="accounts-modal-backdrop" style="display: none;">
+        <div id="accounts-modal">
+            <div class="modal-header">
+                <h2><i class="fas fa-file-invoice-dollar"></i> Accounts - Invoice Management</h2>
+                <button id="accounts-modal-close-btn">&times;</button>
+            </div>
+            <div class="accounts-toolbar">
+                <div class="accounts-filters">
+                    <div class="filter-group">
+                        <label>From Date</label>
+                        <input type="date" id="accounts-from-date">
+                    </div>
+                    <div class="filter-group">
+                        <label>To Date</label>
+                        <input type="date" id="accounts-to-date">
+                    </div>
+                    <div class="filter-group">
+                        <label>Quick Filter</label>
+                        <select id="accounts-quick-filter">
+                            <option value="all">All Time</option>
+                            <option value="today">Today</option>
+                            <option value="week">This Week</option>
+                            <option value="month" selected>This Month</option>
+                            <option value="lastmonth">Last Month</option>
+                            <option value="year">This Year</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label>Payment Status</label>
+                        <select id="accounts-payment-filter">
+                            <option value="all">All</option>
+                            <option value="Paid">Paid</option>
+                            <option value="Unpaid">Unpaid</option>
+                        </select>
+                    </div>
+                    <div class="filter-group search-group">
+                        <label>Search</label>
+                        <input type="text" id="accounts-search" placeholder="Search by name, invoice #...">
+                    </div>
+                    <button id="accounts-apply-filter" class="accounts-btn primary">
+                        <i class="fas fa-filter"></i> Apply
+                    </button>
+                    <button id="accounts-reset-filter" class="accounts-btn secondary">
+                        <i class="fas fa-undo"></i> Reset
+                    </button>
+                </div>
+            </div>
+            <div class="accounts-summary">
+                <div class="summary-card total">
+                    <div class="summary-icon"><i class="fas fa-file-invoice"></i></div>
+                    <div class="summary-info">
+                        <span class="summary-value" id="summary-total-invoices">0</span>
+                        <span class="summary-label">Total Invoices</span>
+                    </div>
+                </div>
+                <div class="summary-card revenue">
+                    <div class="summary-icon"><i class="fas fa-pound-sign"></i></div>
+                    <div class="summary-info">
+                        <span class="summary-value" id="summary-total-revenue">£0.00</span>
+                        <span class="summary-label">Total Revenue</span>
+                    </div>
+                </div>
+                <div class="summary-card paid">
+                    <div class="summary-icon"><i class="fas fa-check-circle"></i></div>
+                    <div class="summary-info">
+                        <span class="summary-value" id="summary-paid">£0.00</span>
+                        <span class="summary-label">Paid</span>
+                    </div>
+                </div>
+                <div class="summary-card unpaid">
+                    <div class="summary-icon"><i class="fas fa-clock"></i></div>
+                    <div class="summary-info">
+                        <span class="summary-value" id="summary-unpaid">£0.00</span>
+                        <span class="summary-label">Unpaid</span>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-content">
+                <div class="accounts-table-container">
+                    <table id="accounts-table" class="accounts-table">
+                        <thead>
+                            <tr>
+                                <th class="sortable" data-sort="invoice_number">Invoice # <i class="fas fa-sort"></i>
+                                </th>
+                                <th class="sortable" data-sort="customer_name">Customer <i class="fas fa-sort"></i></th>
+                                <th class="sortable" data-sort="invoice_date">Date <i class="fas fa-sort"></i></th>
+                                <th class="sortable" data-sort="due_date">Due Date <i class="fas fa-sort"></i></th>
+                                <th class="sortable" data-sort="total_amount">Amount <i class="fas fa-sort"></i></th>
+                                <th class="sortable" data-sort="payment_status">Status <i class="fas fa-sort"></i></th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="accounts-table-body">
+                            <!-- Invoice rows will be loaded here -->
+                        </tbody>
+                    </table>
+                    <div id="accounts-loading" class="accounts-loading" style="display: none;">
+                        <i class="fas fa-spinner fa-spin"></i> Loading invoices...
+                    </div>
+                    <div id="accounts-empty" class="accounts-empty" style="display: none;">
+                        <i class="fas fa-inbox"></i>
+                        <p>No invoices found</p>
+                    </div>
+                </div>
+                <div class="accounts-pagination">
+                    <span id="accounts-showing">Showing 0-0 of 0</span>
+                    <div class="pagination-buttons">
+                        <button id="accounts-prev-btn" class="pagination-btn" disabled><i
+                                class="fas fa-chevron-left"></i></button>
+                        <span id="accounts-page-info">Page 1</span>
+                        <button id="accounts-next-btn" class="pagination-btn" disabled><i
+                                class="fas fa-chevron-right"></i></button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Invoice Detail Modal (for viewing from Accounts) -->
+    <div id="invoice-detail-modal-backdrop" style="display: none;">
+        <div id="invoice-detail-modal">
+            <div class="modal-header">
+                <h2><i class="fas fa-file-invoice"></i> <span id="invoice-detail-title">Invoice Details</span></h2>
+                <div class="invoice-actions">
+                    <button id="invoice-detail-pdf-btn" class="action-btn save-btn" title="Download PDF">
+                        <i class="fas fa-file-pdf"></i> PDF
+                    </button>
+                    <button id="invoice-detail-email-btn" class="action-btn email-btn" title="Email Invoice">
+                        <i class="fas fa-envelope"></i> Email
+                    </button>
+                    <button id="invoice-detail-close-btn">&times;</button>
+                </div>
+            </div>
+            <div class="modal-content">
+                <div id="invoice-detail-content" class="invoice-modal-container">
+                    <!-- Invoice detail will be loaded here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Visa Information Modal -->
+    <div id="info-modal-backdrop" style="display: none;">
+        <div id="info-modal">
+            <div class="modal-header info-modal-header">
+                <h2><i class="fas fa-info-circle"></i> Important Visa Information</h2>
+                <button id="info-modal-close-btn">&times;</button>
+            </div>
+            <div class="modal-content info-modal-content">
+                <!-- Processing Time Section -->
+                <div class="info-section">
+                    <div class="info-section-header">
+                        <i class="fas fa-clock"></i>
+                        <h3>Processing Time After Appointment</h3>
+                    </div>
+                    <div class="info-section-body">
+                        <p>Most applicants receive their passport within <strong>15–25 working days</strong> after their
+                            appointment. In some cases, processing may extend to <strong>25–45 working days</strong>,
+                            depending on embassy procedures.</p>
+                        <div class="info-highlight warning">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            <span>To ensure smooth travel planning, we strongly recommend allowing a <strong>minimum of
+                                    25 days</strong> between your appointment date and your intended travel date.</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Checklist Requirements Section -->
+                <div class="info-section">
+                    <div class="info-section-header">
+                        <i class="fas fa-clipboard-list"></i>
+                        <h3>Basic Checklist Requirements</h3>
+                    </div>
+                    <div class="info-section-body">
+                        <div class="checklist-grid">
+                            <div class="checklist-item">
+                                <div class="checklist-icon passport"><i class="fas fa-passport"></i></div>
+                                <div class="checklist-content">
+                                    <h4>Passport and Copies</h4>
+                                    <ul>
+                                        <li>Valid passport (at least 6 months after your travel date)</li>
+                                        <li>Copies of passport pages</li>
+                                        <li>Valid UK residence permit and/or E-Visa (UK E-Visa, Immigration Status, or
+                                            Permanent Residency, Is it valid for at least 3 months after your travel
+                                            date)</li>
+                                    </ul>
+                                </div>
+                            </div>
+                            <div class="checklist-item">
+                                <div class="checklist-icon travel"><i class="fas fa-plane-departure"></i></div>
+                                <div class="checklist-content">
+                                    <h4>Flight or Travel Tickets</h4>
+                                    <ul>
+                                        <li>Fully paid flight, train, or ferry tickets</li>
+                                        <li>Valid payment receipts must be provided</li>
+                                        <li>Review ticket prices and travel details carefully before confirmation</li>
+                                    </ul>
+                                </div>
+                            </div>
+                            <div class="checklist-item">
+                                <div class="checklist-icon finance"><i class="fas fa-university"></i></div>
+                                <div class="checklist-content">
+                                    <h4>Financial Documents</h4>
+                                    <ul>
+                                        <li>Bank statements for the last 3 months</li>
+                                        <li>Recent payslips</li>
+                                    </ul>
+                                    <div class="info-note">
+                                        <i class="fas fa-lightbulb"></i>
+                                        It is recommended to maintain a minimum balance of approximately
+                                        <strong>£1,200</strong> for at least <strong>1–2 weeks</strong> prior to your
+                                        appointment. This helps demonstrate to the embassy that you have sufficient
+                                        funds to cover your expenses while traveling.
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="checklist-item">
+                                <div class="checklist-icon employment"><i class="fas fa-briefcase"></i></div>
+                                <div class="checklist-content">
+                                    <h4>Employment or Study Confirmation</h4>
+                                    <ul>
+                                        <li>Employment letter or study letter (VisaD provides a standard template and
+                                            guidance to obtain this document)</li>
+                                    </ul>
+                                </div>
+                            </div>
+                            <div class="checklist-item">
+                                <div class="checklist-icon photos"><i class="fas fa-camera"></i></div>
+                                <div class="checklist-content">
+                                    <h4>Photographs</h4>
+                                    <ul>
+                                        <li>Two recent biometric passport-size photographs</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="info-highlight success">
+                            <i class="fas fa-user-check"></i>
+                            <span><strong>Full Support Package:</strong> Clients opting for the Full Support Package
+                                will have all supporting documents carefully prepared and reviewed by our documentation
+                                team, ensuring a complete and well-organized application.</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Document Submission Guidelines -->
+                <div class="info-section">
+                    <div class="info-section-header">
+                        <i class="fas fa-file-alt"></i>
+                        <h3>Document Submission Guidelines</h3>
+                    </div>
+                    <div class="info-section-body">
+                        <ul class="guidelines-list">
+                            <li><i class="fas fa-print"></i> Please print all documents listed in your checklist</li>
+                            <li><i class="fas fa-palette"></i> Both black-and-white or color printouts are acceptable
+                            </li>
+                            <li><i class="fas fa-clock"></i> Arrive at the Visa Application Centre at least <strong>30
+                                    minutes prior</strong> to your scheduled appointment, as late entry may not be
+                                permitted</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Visa Duration Section -->
+                <div class="info-section">
+                    <div class="info-section-header">
+                        <i class="fas fa-calendar-alt"></i>
+                        <h3>Visa Duration</h3>
+                    </div>
+                    <div class="info-section-body">
+                        <p>The visa duration is determined solely by the embassy based on the submitted documentation
+                            and travel history.</p>
+                        <div class="duration-info">
+                            <div class="duration-card">
+                                <div class="duration-icon"><i class="fas fa-user-plus"></i></div>
+                                <div class="duration-text">
+                                    <strong>First-time applicants:</strong>
+                                    <span>Typically issued for 1–3 months with multiple entries</span>
+                                </div>
+                            </div>
+                            <div class="duration-card">
+                                <div class="duration-icon"><i class="fas fa-calendar-check"></i></div>
+                                <div class="duration-text">
+                                    <strong>Variable validity:</strong>
+                                    <span>May range from a few days to several months, depending on individual
+                                        assessment</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Success Rate Section -->
+                <div class="info-section">
+                    <div class="info-section-header">
+                        <i class="fas fa-chart-line"></i>
+                        <h3>Visa Success Rate</h3>
+                    </div>
+                    <div class="info-section-body">
+                        <div class="success-rate-container">
+                            <div class="success-rate-card industry">
+                                <div class="rate-circle">
+                                    <span class="rate-value">~80%</span>
+                                </div>
+                                <div class="rate-label">Industry Approval Rate</div>
+                                <div class="rate-sublabel">10–20% rejection rate</div>
+                            </div>
+                            <div class="success-rate-card visad">
+                                <div class="rate-circle highlight">
+                                    <span class="rate-value">95%+</span>
+                                </div>
+                                <div class="rate-label">VisaD Success Rate</div>
+                                <div class="rate-sublabel">Expert documentation support</div>
+                            </div>
+                        </div>
+                        <div class="info-highlight info">
+                            <i class="fas fa-gavel"></i>
+                            <span>While visa issuance is ultimately at the discretion of the embassy and cannot be
+                                guaranteed, refusals are rare when applications are complete and well-prepared.</span>
+                        </div>
+                        <p class="refusal-note">In the unlikely event of a refusal, it is most often related to the
+                            embassy seeking additional clarity regarding the purpose or intent of travel. In such cases,
+                            <strong>VisaD provides full guidance and support for resubmission as a goodwill
+                                gesture</strong>.
+                        </p>
+                        <div class="policy-link">
+                            <i class="fas fa-shield-alt"></i>
+                            Our complete refund policy can be reviewed here: <a
+                                href="https://www.visad.co.uk/privacy-policy/"
+                                target="_blank">https://www.visad.co.uk/privacy-policy/</a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Refund and Appointment Policy -->
+                <div class="info-section">
+                    <div class="info-section-header">
+                        <i class="fas fa-undo-alt"></i>
+                        <h3>Refund and Appointment Policy</h3>
+                    </div>
+                    <div class="info-section-body">
+                        <div class="refund-options">
+                            <div class="refund-option">
+                                <div class="refund-icon"><i class="fas fa-money-bill-wave"></i></div>
+                                <div class="refund-text">Full refund if an appointment is unavailable or Alternatively,
+                                    we can assist in arranging an appointment for another eligible country</div>
+                            </div>
+                            <div class="refund-option">
+                                <div class="refund-icon"><i class="fas fa-percentage"></i></div>
+                                <div class="refund-text">If you cancel your plan before the appointment is confirmed,
+                                    80% of the amount will be refundable</div>
+                            </div>
+                            <div class="refund-option">
+                                <div class="refund-icon"><i class="fas fa-times-circle"></i></div>
+                                <div class="refund-text">No refund available after appointment confirmation for
+                                    VFS/TLS/EMBASSY</div>
+                            </div>
+                            <div class="refund-option">
+                                <div class="refund-icon"><i class="fas fa-calendar-alt"></i></div>
+                                <div class="refund-text">If you wish to reschedule or make changes to your appointment,
+                                    an appointment and monitoring fee of approximately £55 will apply</div>
+                            </div>
+                        </div>
+                        <div class="policy-link">
+                            <i class="fas fa-shield-alt"></i>
+                            For full refund details, please refer to: <a href="https://www.visad.co.uk/privacy-policy/"
+                                target="_blank">VisaD Privacy & Refund Policy</a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Footer Message -->
+                <div class="info-footer">
+                    <div class="info-highlight warning" style="margin-bottom: 20px;">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <strong>IMPORTANT:</strong> Your details have been successfully updated in our system for your
+                        visa appointment. Appointment slots are typically confirmed within 2–6 weeks. Please carefully
+                        review your personal information below and inform us immediately if any corrections are
+                        required.
+                    </div>
+                    <p>We kindly request that you read all the information provided to fully understand how our service
+                        assists you, as well as our terms and conditions. Should you require any further clarification,
+                        please contact us at: <a href="mailto:doc@visad.co.uk"><strong>doc@visad.co.uk</strong></a></p>
+                    <p>If you have any questions or need to update any details, please do not hesitate to contact us.
+                        Our team is always happy to assist.</p>
+                    <p class="thank-you">Thank you for choosing <strong>VisaD</strong>. We wish you every success with
+                        your visa application.</p>
+                    <div class="signature">
+                        <span>Kind regards,</span>
+                        <strong>VisaD – Documentation Support Team</strong>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Core scripts -->
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/slim-select/2.8.2/slimselect.min.js"></script>
+
+    <!-- PDF libraries - deferred (only needed for PDF generation) -->
+    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+    <!-- Quick Init Script -->
+    <script>
+        (function () {
+            // Password visibility toggle
+            const passwordToggle = document.getElementById('password-toggle');
+            const passwordInput = document.getElementById('password');
+
+            if (passwordToggle && passwordInput) {
+                passwordToggle.addEventListener('click', function () {
+                    const isPassword = passwordInput.type === 'password';
+                    passwordInput.type = isPassword ? 'text' : 'password';
+                    this.innerHTML = isPassword ? '<i class="fas fa-eye-slash"></i>' : '<i class="fas fa-eye"></i>';
+                    this.title = isPassword ? 'Hide password' : 'Show password';
+                });
+            }
+
+            // Stub for triggerGalaxyWarp (in case any code calls it)
+            window.triggerGalaxyWarp = function (callback) { if (callback) callback(); };
+        })();
+    </script>
+
+    <script src="main.js"></script>
+</body>
+
+
+</body>
+
+</html>

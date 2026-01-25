@@ -1,0 +1,12 @@
+{
+    "first_name": "Test",
+    "last_name": "User",
+    "passport_no": "T1234567",
+    "email": "test@example.com",
+    "phone": "1234567890",
+    "visa_type": "Tourist",
+    "package": "Standard",
+    "travel_country": "France",
+    "status": "Pending",
+    "payment_status": "Unpaid"
+}

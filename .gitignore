@@ -1,0 +1,3 @@
+# Ignore embedded service repositories
+notify/
+Bot_monitor/notify/

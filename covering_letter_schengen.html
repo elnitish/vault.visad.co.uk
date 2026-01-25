@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Schengen Tourist Visa - Covering Letter | VisaD</title>
+    <link rel="icon" type="image/png" href="https://www.visad.co.uk/wp-content/uploads/2025/08/visad-png.png">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"/>
+    <link rel="stylesheet" href="covering_letter_schengen.css">
+</head>
+<body>
+    <div class="main-container">
+        <!-- Fixed Client Info Header -->
+        <div class="client-info-header">
+            <div class="client-info-main">
+                <img src="https://www.visad.co.uk/wp-content/uploads/2025/08/visad-png.png" alt="VisaD Logo" class="client-header-logo">
+                <div class="client-info-text">
+                    <h2 id="client-name">Loading...</h2>
+                    <p id="client-details">
+                        Applied for a <strong id="visa-country">-</strong> <strong id="visa-type">-</strong> visa in <strong id="application-city">-</strong> with our <strong id="package-type">-</strong> package
+                    </p>
+                </div>
+            </div>
+            
+            <!-- Horizontal Navigation Bar -->
+            <nav class="horizontal-nav">
+                <button class="nav-item" data-action="locker-data">
+                    <div class="nav-icon">
+                        <i class="fas fa-database"></i>
+                    </div>
+                    <span class="nav-label">Data</span>
+                </button>
+                
+                <button class="nav-item" data-action="client-documents">
+                    <div class="nav-icon">
+                        <i class="fas fa-folder-open"></i>
+                    </div>
+                    <span class="nav-label">Documents</span>
+                </button>
+                
+                <button class="nav-item active" data-action="covering-letter">
+                    <div class="nav-icon">
+                        <i class="fas fa-file-alt"></i>
+                    </div>
+                    <span class="nav-label">Cover Letter</span>
+                </button>
+                
+                <button class="nav-item" data-action="checklist">
+                    <div class="nav-icon">
+                        <i class="fas fa-tasks"></i>
+                    </div>
+                    <span class="nav-label">Checklist</span>
+                </button>
+            </nav>
+        </div>
+
+        <div class="form-container">
+            <!-- Secondary Action Buttons -->
+            <div class="secondary-actions">
+                <button id="reset-btn" class="action-btn"><i class="fas fa-undo"></i> Reset</button>
+                <button id="download-btn" class="action-btn action-btn-primary"><i class="fas fa-download"></i> Download DOC</button>
+                <button id="close-btn" class="action-btn action-btn-danger"><i class="fas fa-times"></i> Close</button>
+            </div>
+
+            <!-- Loading State -->
+            <div id="loading-state" class="loading-state">
+                <div class="spinner"></div>
+                <p>Loading client data...</p>
+            </div>
+
+            <!-- Error State -->
+            <div id="error-state" class="error-state" style="display: none;">
+                <i class="fas fa-exclamation-triangle"></i>
+                <h3>Error Loading Data</h3>
+                <p id="error-message">Could not load client information.</p>
+                <button onclick="window.location.reload()" class="btn-secondary">Retry</button>
+            </div>
+
+            <!-- Letter Content -->
+            <div id="letter-section" class="letter-section" style="display: none;">
+                <!-- Co-Travellers Section Above Toolbar -->
+                <div id="co-travellers-section" style="display: none; margin: 20px 20px 0 20px;">
+                    <div class="co-travellers-container">
+                        <div class="co-travellers-header" id="co-travellers-toggle" style="cursor: pointer;">
+                            <div style="display: flex; align-items: center; gap: 10px;">
+                                <i class="fas fa-users"></i>
+                                <span id="co-travellers-title">CO-TRAVELLERS</span>
+                            </div>
+                            <i class="fas fa-chevron-down" id="co-travellers-chevron"></i>
+                        </div>
+                        <div id="co-travellers-list" style="display: none;"></div>
+                    </div>
+                </div>
+                
+                <div class="letter-wrapper">
+                    <!-- Toolbar -->
+                    <div class="toolbar">
+                        <div class="toolbar-info" style="display: flex; flex-direction: column; gap: 8px;">
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <i class="fas fa-file-signature" style="font-size: 1.2rem; color: #2563eb;"></i>
+                                <span style="font-weight: 700; color: #1e293b; font-size: 1rem;">Professional Covering Letter - Prepared by VisaD Document Team</span>
+                            </div>
+                            <div style="font-size: 0.9rem; line-height: 1.6; color: #475569;">
+                                <strong style="color: #2563eb;">✓</strong> This is a detailed covering letter prepared for you using your provided details to strengthen your visa application.<br>
+                                <strong style="color: #2563eb;">✓</strong> This document is <strong>LIVE EDITABLE</strong> - You can make changes anywhere and remove unwanted parts.<br>
+                                <strong style="color: #ef4444;">⚠ IMPORTANT:</strong> Please read carefully - Check each point for accuracy. Make corrections where needed.
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Letter Content (Editable) -->
+                    <div class="letter-content" id="letter-editor" contenteditable="true">
+                        <!-- Letter will be generated here by JavaScript -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.7.1.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+    <script src="covering_letter_schengen.js"></script>
+</body>
+</html>

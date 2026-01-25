@@ -1,0 +1,9 @@
+apps:
+- name: booking.visad.co.uk/pdfgen
+  cwd: /home/visadcouk/vault.visad.co.uk/
+  script: "server.js"
+  interpreter: "/usr/bin/node"
+  env:
+   NODE_ENV: "production"
+   NODE_PORT: 3103
+

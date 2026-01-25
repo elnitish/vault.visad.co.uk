@@ -1,0 +1,1667 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Applicants Waiting for Appointment</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg: #f4f7fa;
+            --card: #ffffff;
+            --text: #111827;
+            --text-2: #6b7280;
+            --text-3: #9ca3af;
+            --border: #e5e7eb;
+            --primary: #4f46e5;
+            --success: #059669;
+            --warning: #d97706;
+            --danger: #dc2626;
+            --radius: 10px;
+        }
+
+        body.dark {
+            --bg: #111827;
+            --card: #1f2937;
+            --text: #f9fafb;
+            --text-2: #9ca3af;
+            --text-3: #6b7280;
+            --border: #374151;
+        }
+
+        body {
+            font-family: 'Inter', system-ui, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            overflow-x: hidden;
+            width: 100%;
+        }
+
+        /* Header */
+        .header {
+            background: linear-gradient(135deg, #1e1b4b 0%, #312e81 100%);
+            padding: 20px 32px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .logo-icon {
+            width: 42px;
+            height: 42px;
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+            border-radius: 12px;
+            display: grid;
+            place-items: center;
+            color: #fff;
+            font-size: 18px;
+        }
+
+        .logo h1 {
+            color: #fff;
+            font-size: 20px;
+            font-weight: 700;
+        }
+
+        .logo p {
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 12px;
+            margin-top: 2px;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn {
+            padding: 10px 18px;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            border: none;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.2s;
+        }
+
+        .btn-ghost {
+            background: rgba(255, 255, 255, 0.1);
+            color: rgba(255, 255, 255, 0.8);
+        }
+
+        .btn-ghost:hover {
+            background: rgba(255, 255, 255, 0.15);
+            color: #fff;
+        }
+
+        .btn-icon {
+            width: 40px;
+            padding: 0;
+            justify-content: center;
+        }
+
+        /* Main Layout */
+        .main {
+            max-width: 100vw;
+            width: 100%;
+            margin: 0 auto;
+            padding: 16px;
+            display: grid;
+            grid-template-columns: 260px 1fr 340px;
+            gap: 16px;
+            overflow-x: hidden;
+        }
+
+        /* Sidebar - Destination Filter */
+        .sidebar {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .filter-card {
+            background: var(--card);
+            border-radius: var(--radius);
+            border: 1px solid var(--border);
+            overflow: hidden;
+        }
+
+        .filter-header {
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .filter-title {
+            font-size: 14px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .filter-title i {
+            color: var(--primary);
+        }
+
+        .filter-count {
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--text-3);
+        }
+
+        .destination-list {
+            padding: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            max-height: 500px;
+            overflow-y: auto;
+        }
+
+        .destination-list::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        .destination-list::-webkit-scrollbar-thumb {
+            background: var(--border);
+            border-radius: 2px;
+        }
+
+        .dest-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 14px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.15s;
+            border: 1px solid transparent;
+        }
+
+        .dest-item:hover {
+            background: var(--bg);
+        }
+
+        .dest-item.active {
+            background: rgba(79, 70, 229, 0.08);
+            border-color: rgba(79, 70, 229, 0.2);
+        }
+
+        body.dark .dest-item.active {
+            background: rgba(79, 70, 229, 0.2);
+        }
+
+        .dest-flag {
+            font-size: 24px;
+            line-height: 1;
+        }
+
+        .dest-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .dest-name {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text);
+        }
+
+        .dest-centers {
+            font-size: 11px;
+            color: var(--text-3);
+            margin-top: 2px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .dest-count {
+            font-size: 12px;
+            font-weight: 700;
+            color: var(--primary);
+            background: rgba(79, 70, 229, 0.1);
+            padding: 4px 10px;
+            border-radius: 20px;
+        }
+
+        .dest-item.active .dest-count {
+            background: var(--primary);
+            color: #fff;
+        }
+
+        /* Stats Card */
+        .stats-card {
+            background: var(--card);
+            border-radius: var(--radius);
+            border: 1px solid var(--border);
+            padding: 20px;
+        }
+
+        .stat-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .stat-row:last-child {
+            border-bottom: none;
+            padding-bottom: 0;
+        }
+
+        .stat-row:first-child {
+            padding-top: 0;
+        }
+
+        .stat-label {
+            font-size: 13px;
+            color: var(--text-2);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .stat-label i {
+            font-size: 14px;
+            width: 20px;
+        }
+
+        .stat-value {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--primary);
+        }
+
+        .uk-time-card {
+            background: linear-gradient(135deg, #1e1b4b 0%, #312e81 100%);
+            border-radius: var(--radius);
+            padding: 20px;
+            color: #fff;
+            text-align: center;
+        }
+
+        .uk-time-card .label {
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            opacity: 0.7;
+            margin-bottom: 8px;
+        }
+
+        .uk-time-card .time {
+            font-size: 28px;
+            font-weight: 700;
+            font-family: 'SF Mono', Monaco, monospace;
+        }
+
+        /* Content Area */
+        .content {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        /* Month Tabs */
+        .tabs-bar {
+            background: var(--card);
+            border-radius: var(--radius);
+            border: 1px solid var(--border);
+            padding: 8px;
+            display: flex;
+            gap: 4px;
+            overflow-x: auto;
+        }
+
+        .tab {
+            padding: 10px 20px;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--text-2);
+            cursor: pointer;
+            border: none;
+            background: none;
+            white-space: nowrap;
+            transition: all 0.15s;
+        }
+
+        .tab:hover {
+            background: var(--bg);
+            color: var(--text);
+        }
+
+        .tab.active {
+            background: var(--primary);
+            color: #fff;
+        }
+
+        /* Table Card */
+        .table-card {
+            background: var(--card);
+            border-radius: var(--radius);
+            border: 1px solid var(--border);
+            overflow: hidden;
+        }
+
+        .table-wrap {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 900px;
+        }
+
+        th {
+            padding: 14px 16px;
+            text-align: left;
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--text-3);
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            background: var(--bg);
+            border-bottom: 1px solid var(--border);
+        }
+
+        th:first-child {
+            width: 50px;
+            text-align: center;
+        }
+
+        td {
+            padding: 14px 16px;
+            font-size: 13px;
+            color: var(--text-2);
+            border-bottom: 1px solid var(--border);
+            vertical-align: top;
+        }
+
+        td:first-child {
+            text-align: center;
+            font-size: 12px;
+            color: var(--text-3);
+        }
+
+        tbody tr {
+            transition: background 0.15s;
+        }
+
+        tbody tr:hover {
+            background: var(--bg);
+        }
+
+        /* Row Colors */
+        tr.risk-high {
+            border-left: 3px solid var(--danger);
+        }
+
+        tr.risk-med {
+            border-left: 3px solid var(--warning);
+        }
+
+        tr.normal {
+            border-left: 3px solid var(--primary);
+        }
+
+        tr.grey {
+            border-left: 3px solid var(--text-3);
+        }
+
+        tr.risk-high td:first-child {
+            color: var(--danger);
+        }
+
+        tr.risk-med td:first-child {
+            color: var(--warning);
+        }
+
+        /* Date Separator */
+        tr.sep td {
+            padding: 0;
+            height: 8px;
+            background: var(--bg);
+            border: none;
+        }
+
+        /* Badges */
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 10px;
+            font-weight: 600;
+        }
+
+        .badge-risk {
+            background: var(--danger);
+            color: #fff;
+        }
+
+        .badge-warn {
+            background: var(--warning);
+            color: #fff;
+        }
+
+        .badge-dep {
+            background: linear-gradient(135deg, #8b5cf6 0%, #a78bfa 100%);
+            color: #fff;
+            margin-left: 8px;
+        }
+
+        /* Name Cell */
+        .name {
+            font-weight: 600;
+            color: var(--text);
+        }
+
+        .agent {
+            font-size: 11px;
+            color: var(--text-3);
+            margin-top: 4px;
+        }
+
+        .meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-top: 8px;
+        }
+
+        .meta-tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 4px 8px;
+            background: var(--bg);
+            border-radius: 4px;
+            font-size: 10px;
+            color: var(--text-2);
+        }
+
+        body.dark .meta-tag {
+            background: #374151;
+        }
+
+        .meta-tag a {
+            color: var(--primary);
+            text-decoration: none;
+        }
+
+        /* Route Cell */
+        .route {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .route-main {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .country {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 12px;
+            background: rgba(79, 70, 229, 0.08);
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--primary);
+        }
+
+        body.dark .country {
+            background: rgba(79, 70, 229, 0.2);
+        }
+
+        .country .flag {
+            font-size: 16px;
+        }
+
+        .center,
+        .visa-type {
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 500;
+        }
+
+        .center {
+            background: var(--bg);
+            color: var(--text-2);
+        }
+
+        body.dark .center {
+            background: #374151;
+        }
+
+        .visa-type {
+            background: rgba(59, 130, 246, 0.1);
+            color: #2563eb;
+        }
+
+        body.dark .visa-type {
+            background: rgba(59, 130, 246, 0.2);
+            color: #60a5fa;
+        }
+
+        .route-details {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+
+        .chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 10px;
+            font-weight: 500;
+        }
+
+        .chip i {
+            font-size: 10px;
+        }
+
+        .chip-pkg {
+            background: rgba(5, 150, 105, 0.1);
+            color: var(--success);
+        }
+
+        .chip-contact {
+            background: rgba(5, 150, 105, 0.1);
+            color: var(--success);
+        }
+
+        .chip-contact a {
+            color: inherit;
+            text-decoration: none;
+        }
+
+        .chip-paid {
+            background: rgba(5, 150, 105, 0.1);
+            color: var(--success);
+        }
+
+        .chip-pending {
+            background: rgba(217, 119, 6, 0.1);
+            color: var(--warning);
+        }
+
+        /* Appointments Cell */
+        .appts {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .appt {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+
+        .appt-live {
+            background: var(--success);
+            color: #fff;
+        }
+
+        .appt-missed {
+            background: var(--danger);
+            color: #fff;
+        }
+
+        /* Remarks */
+        .remarks {
+            margin-top: 6px;
+            padding: 8px 10px;
+            background: rgba(217, 119, 6, 0.08);
+            border-left: 2px solid var(--warning);
+            border-radius: 4px;
+            font-size: 11px;
+            color: var(--warning);
+        }
+
+        /* Empty State */
+        .empty {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--text-3);
+        }
+
+        .empty-icon {
+            width: 60px;
+            height: 60px;
+            margin: 0 auto 16px;
+            background: var(--bg);
+            border-radius: 50%;
+            display: grid;
+            place-items: center;
+            font-size: 24px;
+        }
+
+        /* Notifications Panel */
+        .notifications-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            max-height: calc(100vh - 48px);
+            position: sticky;
+            top: 24px;
+        }
+
+        .notif-header {
+            background: var(--card);
+            border-radius: var(--radius);
+            border: 1px solid var(--border);
+            padding: 16px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .notif-title {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 15px;
+            font-weight: 700;
+            color: var(--text);
+        }
+
+        .notif-title i {
+            color: var(--primary);
+            font-size: 16px;
+        }
+
+        .notif-status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--text-2);
+        }
+
+        .notif-status .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--warning);
+            animation: pulse-dot 2s ease-in-out infinite;
+        }
+
+        .notif-status.connected .status-dot {
+            background: var(--success);
+        }
+
+        .notif-status.disconnected .status-dot {
+            background: var(--danger);
+            animation: none;
+        }
+
+        @keyframes pulse-dot {
+
+            0%,
+            100% {
+                opacity: 1;
+                transform: scale(1);
+            }
+
+            50% {
+                opacity: 0.6;
+                transform: scale(0.9);
+            }
+        }
+
+        .notif-stats {
+            background: var(--card);
+            border-radius: var(--radius);
+            border: 1px solid var(--border);
+            padding: 16px 20px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+        }
+
+        .notif-stat {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .notif-stat-value {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--primary);
+            font-family: 'SF Mono', Monaco, monospace;
+        }
+
+        .notif-stat-label {
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--text-3);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .notif-list {
+            background: var(--card);
+            border-radius: var(--radius);
+            border: 1px solid var(--border);
+            flex: 1;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            padding: 12px;
+            max-height: calc(100vh - 300px);
+        }
+
+        .notif-list::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .notif-list::-webkit-scrollbar-thumb {
+            background: var(--border);
+            border-radius: 3px;
+        }
+
+        .notif-empty {
+            text-align: center;
+            padding: 40px 20px;
+            color: var(--text-3);
+        }
+
+        .notif-empty i {
+            font-size: 32px;
+            margin-bottom: 12px;
+            opacity: 0.5;
+        }
+
+        .notif-empty p {
+            font-size: 13px;
+        }
+
+        .notif-item {
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 12px;
+            transition: all 0.2s;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .notif-item:hover {
+            border-color: var(--primary);
+            box-shadow: 0 2px 8px rgba(79, 70, 229, 0.1);
+        }
+
+        .notif-item.keyword-match {
+            border-left: 3px solid var(--success);
+            background: rgba(5, 150, 105, 0.03);
+        }
+
+        body.dark .notif-item.keyword-match {
+            background: rgba(5, 150, 105, 0.08);
+        }
+
+        .notif-item-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .notif-sender {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text);
+        }
+
+        .notif-time {
+            font-size: 10px;
+            color: var(--text-3);
+            font-family: 'SF Mono', Monaco, monospace;
+        }
+
+        .notif-group {
+            font-size: 11px;
+            color: var(--text-2);
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .notif-group i {
+            font-size: 10px;
+            color: var(--text-3);
+        }
+
+        .notif-message {
+            font-size: 12px;
+            color: var(--text-2);
+            line-height: 1.5;
+            margin-bottom: 8px;
+            max-height: 60px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            display: -webkit-box;
+            -webkit-line-clamp: 3;
+            line-clamp: 3;
+            -webkit-box-orient: vertical;
+        }
+
+        .notif-keyword {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 4px 8px;
+            background: var(--success);
+            color: #fff;
+            border-radius: 4px;
+            font-size: 10px;
+            font-weight: 600;
+        }
+
+        .notif-keyword i {
+            font-size: 9px;
+        }
+
+        /* Responsive */
+        @media (max-width: 1600px) {
+            .main {
+                grid-template-columns: 240px 1fr 320px;
+                gap: 12px;
+                padding: 12px;
+            }
+        }
+
+        @media (max-width: 1400px) {
+            .main {
+                grid-template-columns: 220px 1fr 300px;
+            }
+        }
+
+        @media (max-width: 1200px) {
+            .main {
+                grid-template-columns: 1fr 300px;
+            }
+
+            .sidebar {
+                display: none;
+            }
+        }
+
+        @media (max-width: 1024px) {
+            .main {
+                grid-template-columns: 1fr;
+            }
+
+            .notifications-panel {
+                display: none;
+            }
+
+            .sidebar {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            }
+
+            .destination-list {
+                max-height: 300px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="header">
+        <div class="logo">
+            <div class="logo-icon"><i class="fas fa-hourglass-half"></i></div>
+            <div>
+                <h1>Waiting for Appointment</h1>
+                <p>Applicant tracking dashboard</p>
+            </div>
+        </div>
+        <div class="header-actions">
+            <button class="btn btn-ghost" onclick="loadData()">
+                <i class="fas fa-arrows-rotate"></i> Refresh
+            </button>
+            <button class="btn btn-ghost btn-icon" onclick="toggleTheme()">
+                <i class="fas fa-moon" id="theme-icon"></i>
+            </button>
+            <a href="index.html" class="btn btn-ghost">
+                <i class="fas fa-arrow-left"></i> Back
+            </a>
+        </div>
+    </div>
+
+    <div class="main">
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <div class="uk-time-card">
+                <div class="label"><i class="fas fa-clock"></i> UK Time</div>
+                <div class="time" id="uk-time">--:--:--</div>
+            </div>
+
+            <div class="stats-card">
+                <div class="stat-row">
+                    <span class="stat-label"><i class="fas fa-users"></i> Total Applicants</span>
+                    <span class="stat-value" id="stat-total">0</span>
+                </div>
+                <div class="stat-row">
+                    <span class="stat-label"><i class="fas fa-globe"></i> Destinations</span>
+                    <span class="stat-value" id="stat-dest">0</span>
+                </div>
+            </div>
+
+            <div class="filter-card">
+                <div class="filter-header">
+                    <span class="filter-title"><i class="fas fa-map-marker-alt"></i> Destinations</span>
+                    <span class="filter-count" id="filter-count">0 countries</span>
+                </div>
+                <div class="destination-list" id="dest-list"></div>
+            </div>
+        </div>
+
+        <!-- Content -->
+        <div class="content">
+            <div class="tabs-bar" id="tabs-bar"></div>
+
+            <div class="table-card">
+                <div class="table-wrap">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Travel Date</th>
+                                <th>Name</th>
+                                <th>Route & Details</th>
+                                <th>Appointments</th>
+                            </tr>
+                        </thead>
+                        <tbody id="table-body"></tbody>
+                    </table>
+                </div>
+                <div class="empty" id="empty" style="display:none;">
+                    <div class="empty-icon"><i class="fas fa-inbox"></i></div>
+                    <p>No applicants found</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Live Notifications Panel -->
+        <div class="notifications-panel">
+            <div class="notif-header">
+                <div class="notif-title">
+                    <i class="fas fa-bell"></i>
+                    <span>Live Appointments</span>
+                </div>
+                <div class="notif-status" id="notif-status">
+                    <span class="status-dot"></span>
+                    <span class="status-text">Connecting...</span>
+                </div>
+            </div>
+            <div class="notif-stats">
+                <div class="notif-stat" style="width: 100%; text-align: center;">
+                    <span class="notif-stat-label" style="font-size: 11px; color: var(--text-3);">Showing</span>
+                    <span class="notif-stat-value" id="notif-filter" style="font-size: 14px; font-weight: 600;">All
+                        Destinations</span>
+                    <span class="notif-stat-label" id="notif-count-label"
+                        style="font-size: 11px; color: var(--text-3);">(Last 24 hours)</span>
+                </div>
+            </div>
+            <div class="notif-list" id="notif-list">
+                <div class="notif-empty">
+                    <i class="fas fa-inbox"></i>
+                    <p>Waiting for notifications...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+    <script>
+        $(function () {
+            let allRecords = [];
+            const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+
+            // Theme
+            window.toggleTheme = function () {
+                document.body.classList.toggle('dark');
+                const icon = $('#theme-icon');
+                if (document.body.classList.contains('dark')) {
+                    icon.removeClass('fa-moon').addClass('fa-sun');
+                    localStorage.setItem('theme', 'dark');
+                } else {
+                    icon.removeClass('fa-sun').addClass('fa-moon');
+                    localStorage.setItem('theme', 'light');
+                }
+            };
+            if (localStorage.getItem('theme') === 'dark') {
+                document.body.classList.add('dark');
+                $('#theme-icon').removeClass('fa-moon').addClass('fa-sun');
+            }
+
+            // UK Time
+            function updateTime() {
+                $('#uk-time').text(new Date().toLocaleString('en-GB', {
+                    timeZone: 'Europe/London', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false
+                }));
+            }
+            updateTime();
+            setInterval(updateTime, 1000);
+
+            // Helpers
+            const getDate = r => r.planned_travel_date || r.travel_date || r.travel_dates || '';
+
+            const getFlag = c => {
+                const map = { 'uk': '🇬🇧', 'united kingdom': '🇬🇧', 'usa': '🇺🇸', 'united states': '🇺🇸', 'canada': '🇨🇦', 'france': '🇫🇷', 'germany': '🇩🇪', 'italy': '🇮🇹', 'spain': '🇪🇸', 'portugal': '🇵🇹', 'netherlands': '🇳🇱', 'switzerland': '🇨🇭', 'australia': '🇦🇺', 'uae': '🇦🇪', 'dubai': '🇦🇪', 'schengen': '🇪🇺', 'europe': '🇪🇺', 'ireland': '🇮🇪', 'greece': '🇬🇷', 'austria': '🇦🇹', 'belgium': '🇧🇪', 'poland': '🇵🇱', 'india': '🇮🇳', 'china': '🇨🇳', 'japan': '🇯🇵', 'singapore': '🇸🇬' };
+                c = (c || '').toLowerCase();
+                for (let [k, v] of Object.entries(map)) if (c.includes(k)) return v;
+                return '🌍';
+            };
+
+            const getRisk = d => {
+                if (!d) return null;
+                const p = d.split('/');
+                if (p.length !== 3) return null;
+                const diff = Math.ceil((new Date(p[2], p[1] - 1, p[0]) - new Date().setHours(0, 0, 0, 0)) / 86400000);
+                return diff <= 7 ? 'high' : diff <= 14 ? 'med' : null;
+            };
+
+            // Generate tabs
+            function genTabs() {
+                const bar = $('#tabs-bar').empty();
+                bar.append(`<button class="tab active" data-filter="all">All</button>`);
+                const ms = new Map();
+                allRecords.forEach(r => {
+                    const d = getDate(r);
+                    if (d) {
+                        const p = d.split('/');
+                        if (p.length === 3) {
+                            const k = p[2] * 100 + parseInt(p[1]);
+                            if (!ms.has(k)) ms.set(k, { m: parseInt(p[1]) - 1, y: parseInt(p[2]) });
+                        }
+                    }
+                });
+                [...ms.entries()].sort((a, b) => b[0] - a[0]).forEach(([k, { m, y }]) => {
+                    bar.append(`<button class="tab" data-month="${m}" data-year="${y}">${months[m]} ${y}</button>`);
+                });
+            }
+
+            // Generate destinations
+            function genDests(records) {
+                const list = $('#dest-list').empty();
+                const total = records.reduce((s, r) => s + 1 + (r.dependents || []).length, 0);
+
+                list.append(`
+                <div class="dest-item active" data-filter="all">
+                    <span class="dest-flag">🌍</span>
+                    <div class="dest-info">
+                        <div class="dest-name">All Destinations</div>
+                        <div class="dest-centers">Show all applicants</div>
+                    </div>
+                    <span class="dest-count">${total}</span>
+                </div>
+            `);
+
+                const stats = {};
+                records.forEach(r => {
+                    const c = r.travel_country || 'Unknown';
+                    const ctr = r.visa_center || '';
+                    if (!stats[c]) stats[c] = { count: 0, centers: {} };
+                    stats[c].count++;
+                    if (ctr) stats[c].centers[ctr] = (stats[c].centers[ctr] || 0) + 1;
+                    (r.dependents || []).forEach(d => {
+                        const dc = d.travel_country || c;
+                        const dce = d.visa_center || ctr;
+                        if (!stats[dc]) stats[dc] = { count: 0, centers: {} };
+                        stats[dc].count++;
+                        if (dce) stats[dc].centers[dce] = (stats[dc].centers[dce] || 0) + 1;
+                    });
+                });
+
+                const sorted = Object.entries(stats).sort((a, b) => b[1].count - a[1].count);
+                $('#stat-dest').text(sorted.length);
+                $('#filter-count').text(`${sorted.length} countries`);
+
+                sorted.forEach(([country, data]) => {
+                    const centersText = Object.entries(data.centers).map(([n, c]) => `${n} (${c})`).join(', ') || 'No centers';
+                    list.append(`
+                    <div class="dest-item" data-country="${country}">
+                        <span class="dest-flag">${getFlag(country)}</span>
+                        <div class="dest-info">
+                            <div class="dest-name">${country}</div>
+                            <div class="dest-centers">${centersText}</div>
+                        </div>
+                        <span class="dest-count">${data.count}</span>
+                    </div>
+                `);
+                });
+            }
+
+            // Event handlers
+            $(document).on('click', '.tab', function () {
+                $('.tab').removeClass('active');
+                $(this).addClass('active');
+                $('.dest-item').removeClass('active');
+                $('.dest-item[data-filter="all"]').addClass('active');
+                filter();
+            });
+
+            $(document).on('click', '.dest-item', function () {
+                $('.dest-item').removeClass('active');
+                $(this).addClass('active');
+                filter($(this).data('country'));
+            });
+
+            function filter(country = null) {
+                const tab = $('.tab.active');
+                let data = allRecords;
+
+                if (tab.data('filter') !== 'all') {
+                    const m = tab.data('month'), y = tab.data('year');
+                    data = data.filter(r => {
+                        const d = getDate(r);
+                        if (!d) return false;
+                        const p = d.split('/');
+                        return p.length === 3 && parseInt(p[1]) - 1 === m && parseInt(p[2]) === y;
+                    });
+                }
+
+                if (country) {
+                    data = data.filter(r => {
+                        if ((r.travel_country || 'Unknown') === country) return true;
+                        return (r.dependents || []).some(d => (d.travel_country || r.travel_country || 'Unknown') === country);
+                    });
+                }
+
+                render(data);
+            }
+
+            // Load data
+            window.loadData = function () {
+                $.get('api/travelers.php?action=read_all&limit=9999', function (res) {
+                    $.get('api/dependents.php?action=read_all&limit=9999', function (depRes) {
+                        const deps = depRes?.records || depRes?.data || (Array.isArray(depRes) ? depRes : []);
+                        const byTraveler = {};
+                        deps.forEach(d => {
+                            const tid = d.traveler_id || d.traveller_id || d.parent_id;
+                            if (tid) (byTraveler[tid] = byTraveler[tid] || []).push(d);
+                        });
+                        process(res, byTraveler);
+                    }).fail(() => process(res, {}));
+                }, 'json').fail((x, s, e) => {
+                    $('#empty').html(`<div class="empty-icon"><i class="fas fa-exclamation-triangle"></i></div><p>Error: ${e}</p>`).show();
+                });
+            };
+
+            function process(res, byTraveler) {
+                if (res.status === 'success') {
+                    (res.data || []).forEach(r => {
+                        if (!r.dependents?.length) r.dependents = byTraveler[r.id] || [];
+                    });
+                    allRecords = (res.data || []).filter(r => (r.status || '').toLowerCase().trim() === 'wait app');
+                    allRecords.sort((a, b) => {
+                        const da = getDate(a), db = getDate(b);
+                        if (!da && !db) return 0;
+                        if (!da) return 1;
+                        if (!db) return -1;
+                        const parse = d => { const p = d.split('/'); return new Date(p[2], p[1] - 1, p[0]); };
+                        return parse(da) - parse(db);
+                    });
+                    genTabs();
+                    filter();
+                }
+            }
+
+            function render(records) {
+                const tbody = $('#table-body').empty();
+                genDests(records);
+
+                const total = records.reduce((s, r) => s + 1 + (r.dependents || []).length, 0);
+                $('#stat-total').text(total);
+
+                if (!records.length) {
+                    $('#empty').show();
+                    return;
+                }
+                $('#empty').hide();
+
+                let prev = null, n = 0;
+
+                records.forEach(r => {
+                    const d = getDate(r);
+                    if (prev && prev !== d) tbody.append(`<tr class="sep"><td colspan="5"></td></tr>`);
+                    prev = d;
+                    n++;
+
+                    const risk = getRisk(d);
+                    const riskBadge = risk === 'high' ? '<span class="badge badge-risk"><i class="fas fa-exclamation"></i> HIGH RISK</span>'
+                        : risk === 'med' ? '<span class="badge badge-warn"><i class="fas fa-exclamation"></i> RISK</span>' : '';
+                    const remarks = r.appointment_remarks ? `<div class="remarks"><i class="fas fa-info-circle"></i> ${r.appointment_remarks}</div>` : '';
+
+                    const name = `${r.first_name || ''} ${r.last_name || ''}`.trim().toUpperCase();
+                    const depBadge = (r.dependents || []).length ? `<span class="badge badge-dep">+${r.dependents.length}</span>` : '';
+                    const agent = r.agent ? `<div class="agent"><i class="fas fa-user-tie"></i> ${r.agent}</div>` : '';
+
+                    let meta = '';
+                    if (r.visa_link) meta += `<span class="meta-tag"><i class="fas fa-link"></i><a href="${r.visa_link}" target="_blank">Visa</a></span>`;
+                    if (r.username) meta += `<span class="meta-tag"><i class="fas fa-at"></i>${r.username}</span>`;
+                    if (r.note) meta += `<span class="meta-tag"><i class="fas fa-comment"></i>${r.note}</span>`;
+                    meta = meta ? `<div class="meta">${meta}</div>` : '';
+
+                    const country = r.travel_country || '';
+                    const center = r.visa_center || '';
+                    const vtype = r.visa_type || '';
+
+                    let details = '';
+                    const pkg = r.package || '';
+                    const phone = (r.whatsapp_contact || r.contact_number || '').replace(/[^0-9+]/g, '');
+                    const pay = (r.payment_status || '').toLowerCase();
+
+                    if (pkg) details += `<span class="chip chip-pkg"><i class="fas fa-box"></i>${pkg}</span>`;
+                    if (phone) {
+                        const wa = phone.startsWith('+') ? phone.slice(1) : phone;
+                        details += `<span class="chip chip-contact"><i class="fab fa-whatsapp"></i><a href="https://wa.me/${wa}" target="_blank">${r.whatsapp_contact || r.contact_number}</a></span>`;
+                    }
+                    if (r.payment_status) {
+                        const cls = pay === 'paid' ? 'chip-paid' : pay === 'pending' ? 'chip-pending' : '';
+                        details += `<span class="chip ${cls}"><i class="fas fa-credit-card"></i>${r.payment_status}</span>`;
+                    }
+                    details = details ? `<div class="route-details">${details}</div>` : '';
+
+                    let appts = '';
+                    if (r.live_appointment) appts += `<span class="appt appt-live"><i class="fas fa-check"></i> Live: ${r.live_appointment}</span>`;
+                    if (r.missed_appointment) appts += `<span class="appt appt-missed"><i class="fas fa-xmark"></i> Missed: ${r.missed_appointment}</span>`;
+                    appts = appts || '<span style="color:var(--text-3)">—</span>';
+
+                    const rowCls = risk === 'high' ? 'risk-high' : risk === 'med' ? 'risk-med' : pkg.toLowerCase().includes('appointment') ? 'grey' : 'normal';
+
+                    tbody.append(`
+                    <tr class="${rowCls}">
+                        <td>${n}</td>
+                        <td>${riskBadge}${d || '—'}${remarks}</td>
+                        <td><span class="name">${name}</span>${depBadge}${agent}${meta}</td>
+                        <td>
+                            <div class="route">
+                                <div class="route-main">
+                                    <span class="country"><span class="flag">${getFlag(country)}</span>${country || '—'}</span>
+                                    ${center ? `<span class="center">${center}</span>` : ''}
+                                    ${vtype ? `<span class="visa-type">${vtype}</span>` : ''}
+                                </div>
+                                ${details}
+                            </div>
+                        </td>
+                        <td><div class="appts">${appts}</div></td>
+                    </tr>
+                `);
+
+                    // Dependents
+                    (r.dependents || []).forEach(dep => {
+                        n++;
+                        const dd = getDate(dep) || d;
+                        const dRisk = getRisk(dd);
+                        const dRiskBadge = dRisk === 'high' ? '<span class="badge badge-risk"><i class="fas fa-exclamation"></i> HIGH RISK</span>'
+                            : dRisk === 'med' ? '<span class="badge badge-warn"><i class="fas fa-exclamation"></i> RISK</span>' : '';
+                        const dRemarks = dep.appointment_remarks ? `<div class="remarks"><i class="fas fa-info-circle"></i> ${dep.appointment_remarks}</div>` : '';
+
+                        const dName = `${dep.first_name || ''} ${dep.last_name || ''}`.trim().toUpperCase();
+
+                        let dMeta = '';
+                        if (dep.visa_link) dMeta += `<span class="meta-tag"><i class="fas fa-link"></i><a href="${dep.visa_link}" target="_blank">Visa</a></span>`;
+                        if (dep.username) dMeta += `<span class="meta-tag"><i class="fas fa-at"></i>${dep.username}</span>`;
+                        if (dep.note) dMeta += `<span class="meta-tag"><i class="fas fa-comment"></i>${dep.note}</span>`;
+                        dMeta = dMeta ? `<div class="meta">${dMeta}</div>` : '';
+
+                        const dc = dep.travel_country || country;
+                        const dce = dep.visa_center || center;
+                        const dvt = dep.visa_type || vtype;
+
+                        let dDetails = '';
+                        const dpkg = dep.package || pkg;
+                        const dphone = (dep.whatsapp_contact || dep.contact_number || '').replace(/[^0-9+]/g, '');
+                        const dpay = (dep.payment_status || r.payment_status || '').toLowerCase();
+
+                        if (dpkg) dDetails += `<span class="chip chip-pkg"><i class="fas fa-box"></i>${dpkg}</span>`;
+                        if (dphone) {
+                            const wa = dphone.startsWith('+') ? dphone.slice(1) : dphone;
+                            dDetails += `<span class="chip chip-contact"><i class="fab fa-whatsapp"></i><a href="https://wa.me/${wa}" target="_blank">${dep.whatsapp_contact || dep.contact_number}</a></span>`;
+                        }
+                        if (dep.payment_status || r.payment_status) {
+                            const cls = dpay === 'paid' ? 'chip-paid' : dpay === 'pending' ? 'chip-pending' : '';
+                            dDetails += `<span class="chip ${cls}"><i class="fas fa-credit-card"></i>${dep.payment_status || r.payment_status}</span>`;
+                        }
+                        dDetails = dDetails ? `<div class="route-details">${dDetails}</div>` : '';
+
+                        let dAppts = '';
+                        if (dep.live_appointment) dAppts += `<span class="appt appt-live"><i class="fas fa-check"></i> Live: ${dep.live_appointment}</span>`;
+                        if (dep.missed_appointment) dAppts += `<span class="appt appt-missed"><i class="fas fa-xmark"></i> Missed: ${dep.missed_appointment}</span>`;
+                        dAppts = dAppts || '<span style="color:var(--text-3)">—</span>';
+
+                        const dRowCls = dRisk === 'high' ? 'risk-high' : dRisk === 'med' ? 'risk-med' : dpkg.toLowerCase().includes('appointment') ? 'grey' : 'normal';
+
+                        tbody.append(`
+                        <tr class="${dRowCls}">
+                            <td>${n}</td>
+                            <td>${dRiskBadge}${dd || '—'}${dRemarks}</td>
+                            <td><span class="name">${dName}</span>${dMeta}</td>
+                            <td>
+                                <div class="route">
+                                    <div class="route-main">
+                                        <span class="country"><span class="flag">${getFlag(dc)}</span>${dc || '—'}</span>
+                                        ${dce ? `<span class="center">${dce}</span>` : ''}
+                                        ${dvt ? `<span class="visa-type">${dvt}</span>` : ''}
+                                    </div>
+                                    ${dDetails}
+                                </div>
+                            </td>
+                            <td><div class="appts">${dAppts}</div></td>
+                        </tr>
+                    `);
+                    });
+                });
+            }
+
+            loadData();
+
+            // Socket.IO Integration for Live Notifications
+            let socket = null;
+            let notificationCount = 0;
+            let keywordMatches = 0;
+            const MAX_NOTIFICATIONS = 50;
+
+            // Notification storage for filtering
+            let allNotifications = [];
+            let currentDestinationFilter = null;
+
+            // Load existing notifications from database
+            function loadNotificationsFromDB() {
+                const NOTIFY_API = '/notify/api/notifications';
+
+                console.log('📥 Loading notifications from database...');
+                console.log('🔗 Full URL:', window.location.origin + NOTIFY_API);
+
+                $.ajax({
+                    url: NOTIFY_API,
+                    method: 'GET',
+                    data: {
+                        limit: 200, // Load last 200 notifications
+                        offset: 0
+                    },
+                    dataType: 'json',
+                    success: function (response) {
+                        console.log('✅ API Response received:', response);
+
+                        if (!response || !response.notifications) {
+                            console.error('❌ Invalid response format:', response);
+                            filterNotifications(null);
+                            return;
+                        }
+
+                        console.log(`✅ Loaded ${response.notifications.length} notifications from database`);
+
+                        // Convert database notifications to our format
+                        response.notifications.forEach(dbNotif => {
+                            const notification = {
+                                sender: dbNotif.sender || 'Unknown',
+                                group: dbNotif.group || 'Unknown Group',
+                                message: dbNotif.message || '',
+                                keyword: dbNotif.keyword || '',
+                                isKeywordMatch: !!dbNotif.isKeywordMatch,
+                                timestamp: dbNotif.timestamp || Date.now(),
+                                country: dbNotif.country || extractCountryFromMessage(dbNotif.message)
+                            };
+                            allNotifications.push(notification);
+                        });
+
+                        // Apply initial filter (24 hours for "All Destinations")
+                        filterNotifications(null);
+
+                        console.log(`📊 Total notifications in memory: ${allNotifications.length}`);
+                    },
+                    error: function (xhr, status, error) {
+                        console.error('❌ Failed to load notifications from database');
+                        console.error('📍 Status:', status);
+                        console.error('📍 Error:', error);
+                        console.error('📍 Status Code:', xhr.status);
+                        console.error('📍 Response Text:', xhr.responseText);
+                        // Show empty state
+                        filterNotifications(null);
+                    }
+                });
+            }
+
+            function initSocketIO() {
+                try {
+                    // ⚠️ PRODUCTION CONFIGURATION - UPDATE THIS!
+                    // Replace with your actual notify server URL
+                    const NOTIFY_SERVER = 'https://vault.visad.co.uk'; // Server with /notify path
+                    // Examples:
+                    // - 'https://yourdomain.com:3000'
+                    // - 'https://notify.yourdomain.com'
+                    // - window.location.origin (if same server/port)
+
+                    console.log('🔌 Connecting to notify server:', NOTIFY_SERVER);
+
+                    socket = io(NOTIFY_SERVER, {
+                        path: '/notify/noti/socket.io',
+                        transports: ['polling', 'websocket'], // Try polling first, then upgrade
+                        reconnection: true,
+                        reconnectionDelay: 1000,
+                        reconnectionAttempts: 5,
+                        timeout: 10000
+                    });
+
+                    socket.on('connect', () => {
+                        console.log('✅ Connected to notification server');
+                        updateConnectionStatus('connected');
+                    });
+
+                    socket.on('disconnect', () => {
+                        console.log('❌ Disconnected from notification server');
+                        updateConnectionStatus('disconnected');
+                    });
+
+                    socket.on('connect_error', (error) => {
+                        console.log('⚠️ Connection error:', error.message);
+                        updateConnectionStatus('disconnected');
+                    });
+
+                    // Listen for new notifications
+                    socket.on('telegram-alert', (data) => {
+                        console.log('🔔 New notification:', data);
+                        addNotification(data);
+                    });
+
+                    // Listen for keyword updates
+                    socket.on('keywords-update', (keywords) => {
+                        console.log('🔍 Keywords updated:', keywords);
+                        keywordMatches = keywords.length;
+                        $('#notif-keyword').text(keywordMatches);
+                    });
+
+                } catch (error) {
+                    console.error('Socket.IO initialization error:', error);
+                    updateConnectionStatus('disconnected');
+                }
+            }
+
+            function updateConnectionStatus(status) {
+                const $status = $('#notif-status');
+                $status.removeClass('connected disconnected');
+
+                if (status === 'connected') {
+                    $status.addClass('connected');
+                    $status.find('.status-text').text('Connected');
+                } else {
+                    $status.addClass('disconnected');
+                    $status.find('.status-text').text('Disconnected');
+                }
+            }
+
+            // Extract country from message text
+            function extractCountryFromMessage(message) {
+                const text = (message || '').toUpperCase();
+                const countries = {
+                    'UK': ['UK', 'UNITED KINGDOM', 'LONDON', 'MANCHESTER', 'EDINBURGH'],
+                    'USA': ['USA', 'UNITED STATES', 'AMERICA', 'NEW YORK', 'WASHINGTON'],
+                    'CANADA': ['CANADA', 'TORONTO', 'VANCOUVER', 'MONTREAL'],
+                    'FRANCE': ['FRANCE', 'PARIS', 'FRENCH'],
+                    'GERMANY': ['GERMANY', 'BERLIN', 'MUNICH', 'GERMAN'],
+                    'ITALY': ['ITALY', 'ROME', 'MILAN', 'ITALIAN'],
+                    'SPAIN': ['SPAIN', 'MADRID', 'BARCELONA', 'SPANISH'],
+                    'PORTUGAL': ['PORTUGAL', 'LISBON', 'PORTUGUESE'],
+                    'NETHERLANDS': ['NETHERLANDS', 'AMSTERDAM', 'DUTCH'],
+                    'SWITZERLAND': ['SWITZERLAND', 'ZURICH', 'SWISS'],
+                    'AUSTRALIA': ['AUSTRALIA', 'SYDNEY', 'MELBOURNE', 'AUSTRALIAN'],
+                    'UAE': ['UAE', 'DUBAI', 'ABU DHABI', 'EMIRATES'],
+                    'SCHENGEN': ['SCHENGEN'],
+                    'IRELAND': ['IRELAND', 'DUBLIN', 'IRISH'],
+                    'GREECE': ['GREECE', 'ATHENS', 'GREEK'],
+                    'AUSTRIA': ['AUSTRIA', 'VIENNA', 'AUSTRIAN'],
+                    'BELGIUM': ['BELGIUM', 'BRUSSELS', 'BELGIAN'],
+                    'POLAND': ['POLAND', 'WARSAW', 'POLISH']
+                };
+
+                for (const [country, keywords] of Object.entries(countries)) {
+                    if (keywords.some(keyword => text.includes(keyword))) {
+                        return country;
+                    }
+                }
+                return null; // No country detected
+            }
+
+            function formatTime(timestamp) {
+                const date = new Date(timestamp);
+                return date.toLocaleTimeString('en-GB', {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    second: '2-digit'
+                });
+            }
+
+            // Filter and render notifications
+            function filterNotifications(destination = null) {
+                currentDestinationFilter = destination;
+                const now = Date.now();
+                const twentyFourHours = 24 * 60 * 60 * 1000;
+                let filtered = allNotifications;
+
+                // Update filter display
+                if (!destination) {
+                    $('#notif-filter').text('All Destinations');
+                    $('#notif-count-label').text('(Last 24 hours)');
+                    filtered = filtered.filter(n => (now - n.timestamp) <= twentyFourHours);
+                } else {
+                    $('#notif-filter').text(destination);
+                    $('#notif-count-label').text('Last 24 hours');
+                    filtered = filtered.filter(n => n.country === destination);
+                }
+
+                renderNotifications(filtered);
+            }
+
+            function renderNotifications(notifications) {
+                const $list = $('#notif-list');
+                $list.empty();
+                if (notifications.length === 0) {
+                    $list.html(`<div class="notif-empty"><i class="fas fa-inbox"></i><p>${currentDestinationFilter ? 'No notifications for this destination' : 'No notifications in last 24 hours'}</p></div>`);
+                    return;
+                }
+                notifications.sort((a, b) => b.timestamp - a.timestamp);
+                notifications.forEach(notif => {
+                    const keywordBadge = notif.isKeywordMatch ? `<span class="notif-keyword"><i class="fas fa-star"></i> ${notif.keyword}</span>` : '';
+                    $list.append(`<div class="notif-item ${notif.isKeywordMatch ? 'keyword-match' : ''}"><div class="notif-item-header"><span class="notif-sender">${notif.sender}</span><span class="notif-time">${formatTime(notif.timestamp)}</span></div><div class="notif-group"><i class="fas fa-users"></i> ${notif.group}</div><div class="notif-message">${notif.message}</div>${keywordBadge}</div>`);
+                });
+            }
+
+            function addNotification(data) {
+                const notification = {
+                    sender: data.sender || 'Unknown',
+                    group: data.group || 'Unknown Group',
+                    message: data.message || '',
+                    keyword: data.keyword || '',
+                    isKeywordMatch: !!data.isKeywordMatch,
+                    timestamp: data.timestamp || Date.now(),
+                    country: extractCountryFromMessage(data.message)
+                };
+                allNotifications.unshift(notification);
+                if (allNotifications.length > 200) allNotifications = allNotifications.slice(0, 200);
+                filterNotifications(currentDestinationFilter);
+            }
+
+            // Hook destination clicks
+            $(document).on('click', '.dest-item', function () {
+                const country = $(this).data('country');
+                const filterType = $(this).data('filter');
+                filterNotifications(filterType === 'all' ? null : country);
+            });
+
+            // Load existing notifications from database on page load
+            loadNotificationsFromDB();
+
+            // Initialize Socket.IO connection for real-time updates
+            if (typeof io !== 'undefined') {
+                initSocketIO();
+            } else {
+                console.warn('Socket.IO not loaded, notifications disabled');
+                updateConnectionStatus('disconnected');
+            }
+        });
+    </script>
+</body>
+
+</html>
