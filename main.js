@@ -3031,7 +3031,7 @@ $(document).ready(function () {
 
     function createRecordBodyHtml(data, table) {
         const id = data.id;
-        const publicUrl = data.public_url_token ? `https://locker.visad.co.uk/${data.public_url_token}` : '';
+        const publicUrl = data.public_url_token ? `https://l.visad.co.uk/${data.public_url_token}` : '';
         const publicLinkHtml = (data.package === 'Full Support' || data.package === 'Fast Track Full Support')
             ? `<span class="public-link-wrapper"><input type="text" readonly value="${publicUrl}"/><button class="copy-link-btn" title="Copy Link"><i class="far fa-copy"></i></button></span>`
             : '<span class="public-link-wrapper" style="display:none;"></span>'; // Hide if not correct package

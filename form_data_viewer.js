@@ -3200,7 +3200,7 @@ $(document).ready(function () {
             const files = evisaFiles.map(file => {
                 let fileUrl = file;
                 // Add base path for client documents if not already a full URL
-                if (!fileUrl.startsWith('http://') && !fileUrl.startsWith('https://')) {
+                if (!fileUrl.startsWith('http://') && !fileUrl.startsWith('https://') && !fileUrl.startsWith('/api/')) {
                     // Remove leading slash if present
                     fileUrl = fileUrl.replace(/^\//, '');
                     // Add the base path for client documents
