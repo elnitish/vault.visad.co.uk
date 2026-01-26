@@ -232,7 +232,9 @@ body {
     display: inline-block;
     margin: 0;
     line-height: 1.4;
-    animation: pulse-highlight 3s ease-in-out infinite;
+    margin: 0;
+    line-height: 1.4;
+    /* animation: pulse-highlight 3s ease-in-out infinite; - REMOVED for performance */
 }
 
 @keyframes pulse-highlight {
@@ -750,7 +752,9 @@ body {
     font-size: 1rem;
     font-weight: 600;
     box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
-    animation: pulse 2s ease-in-out infinite;
+    font-weight: 600;
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+    /* animation: pulse 2s ease-in-out infinite; - REMOVED for performance */
 }
 
 @keyframes pulse {

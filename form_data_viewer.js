@@ -19,7 +19,7 @@
 
 // Helper to convert snake_case to camelCase (for API requests)
 function snakeToCamelCase(str) {
-    return str.replace(/_([a-z])/g, (match, letter) => letter.toUpperCase());
+    return str.replace(/_([a-z0-9])/g, (match, letter) => letter.toUpperCase());
 }
 
 $(document).ready(function () {
@@ -707,21 +707,8 @@ $(document).ready(function () {
 
     function updateQuestionField(field, value, onSuccess) {
         // --- FIX: Map mismatched frontend fields to backend fields ---
-        const companyMappings = {
-            'inviting_company_name': 'company_name',
-            'inviting_company_address_1': 'company_address_1',
-            'inviting_company_address_2': 'company_address_2',
-            'inviting_company_city': 'company_city',
-            'inviting_company_state': 'company_state',
-            'inviting_company_zip': 'company_zip',
-            'inviting_company_phone': 'company_phone',
-            'inviting_company_email': 'company_email'
-        };
+        // Legacy mapping removed - Backend now supports these fields directly
 
-        if (companyMappings[field]) {
-            console.log(`Mapping field ${field} -> ${companyMappings[field]}`);
-            field = companyMappings[field];
-        }
         // -------------------------------------------------------------
 
         const camelCaseField = snakeToCamelCase(field);
@@ -1909,23 +1896,31 @@ $(document).ready(function () {
                 // Parse the field value - it could be a single file or multiple files
                 let filePaths = [];
 
-                // Check if it's a JSON array string
-                try {
-                    if (fieldValue.startsWith('[')) {
-                        filePaths = JSON.parse(fieldValue);
-                    } else {
+                // Check if it's already an array (from API)
+                if (Array.isArray(fieldValue)) {
+                    filePaths = fieldValue;
+                } else if (typeof fieldValue === 'string') {
+                    // Check if it's a JSON array string
+                    try {
+                        if (fieldValue.trim().startsWith('[')) {
+                            filePaths = JSON.parse(fieldValue);
+                        } else {
+                            filePaths = [fieldValue];
+                        }
+                    } catch (e) {
+                        // If not JSON, treat as single file path
                         filePaths = [fieldValue];
                     }
-                } catch (e) {
-                    // If not JSON, treat as single file path
-                    filePaths = [fieldValue];
+                } else {
+                    // Unknown type, try toString or ignore
+                    console.warn(`Unknown type for field ${fieldName}:`, typeof fieldValue);
                 }
 
                 console.log(`[File Path Debug] Parsed paths:`, filePaths);
 
                 // Add each file
                 filePaths.forEach(filePath => {
-                    if (filePath && filePath.trim() !== '') {
+                    if (filePath && typeof filePath === 'string' && filePath.trim() !== '') {
                         // Extract filename from path
                         const fileName = filePath.split('/').pop();
 
@@ -3739,6 +3734,8 @@ $(document).ready(function () {
 
     // Sticky header scroll effect
     // Sticky header scroll effect - Optimized
+    // Sticky header scroll effect - REMOVED for performance (CSS handles sticky position)
+    /*
     function setupStickyHeader() {
         const $nav = $('.horizontal-nav');
         let ticking = false;
@@ -3758,12 +3755,14 @@ $(document).ready(function () {
             }
         });
     }
+    */
 
     // Initialize file preview on document ready
     setupFilePreview();
 
     // Initialize sticky header
-    setupStickyHeader();
+    // Initialize sticky header
+    // setupStickyHeader();
 });
 console.log('Form data viewer script loaded');
 /**
@@ -5237,21 +5236,8 @@ function saveSection(sectionId) {
 
 function updateFieldViaAdminAPI(field, value, table) {
     // --- FIX: Map mismatched frontend fields to backend fields ---
-    const companyMappings = {
-        'inviting_company_name': 'company_name',
-        'inviting_company_address_1': 'company_address_1',
-        'inviting_company_address_2': 'company_address_2',
-        'inviting_company_city': 'company_city',
-        'inviting_company_state': 'company_state',
-        'inviting_company_zip': 'company_zip',
-        'inviting_company_phone': 'company_phone',
-        'inviting_company_email': 'company_email'
-    };
+    // Legacy mapping removed - Backend now supports these fields directly
 
-    if (companyMappings[field]) {
-        console.log(`Mapping field ${field} -> ${companyMappings[field]}`);
-        field = companyMappings[field];
-    }
     // -------------------------------------------------------------
 
     // Access from global scope
