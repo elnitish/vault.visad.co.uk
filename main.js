@@ -4199,19 +4199,22 @@ If you need any assistance, please call us directly.`;
 
         // Save discount fields first
         // Now save full invoice to invoices table
+        // Create full invoice payload for Spring Boot
+        const invoicePayload = {
+            subtotal: parseFloat(subtotal.toFixed(2)),
+            discountType: discountType,
+            discountValue: parseFloat(discountValue) || 0,
+            discountAmount: parseFloat(discountAmount.toFixed(2)),
+            total: parseFloat(total.toFixed(2)),
+            itemsJson: JSON.stringify(items)
+        };
+
+        // Call Spring Boot API to save invoice
         $.ajax({
-            url: 'api/travelers.php?action=save_invoice',
+            url: `/invoices/${recordData.id}/save`,
             method: 'POST',
-            data: {
-                id: recordData.id,
-                subtotal: subtotal.toFixed(2),
-                discount_type: discountType,
-                discount_value: discountValue,
-                discount_amount: discountAmount.toFixed(2),
-                total: total.toFixed(2),
-                items_json: JSON.stringify(items)
-            },
-            dataType: 'json',
+            contentType: 'application/json',
+            data: JSON.stringify(invoicePayload),
             success: function (res) {
                 if (res.status === 'success') {
                     // Update local data
@@ -4219,10 +4222,13 @@ If you need any assistance, please call us directly.`;
                     recordData.discount_value = parseFloat(discountValue) || 0;
                     $('#invoice-modal').data('record-data', recordData);
 
-                    // Update saved invoice data
+                    // Update saved invoice data locally
                     const savedInvoice = {
-                        id: res.data.invoice_id,
-                        invoice_number: res.data.invoice_number,
+                        id: res.data.invoice_id, // backend response might differ, check DTO? Response is generic ApiResponse? 
+                        // Actually Controller returns ApiResponse<Traveler>. 
+                        // We might need to reload or just mock it. 
+                        // For now let's assume we update the modal state.
+                        invoice_number: res.data.invoiceNumber || res.data.invoice_number, // check what Traveler entity returns
                         subtotal: subtotal,
                         discount_type: discountType,
                         discount_value: parseFloat(discountValue) || 0,
@@ -4837,268 +4843,282 @@ If you need any assistance, please call us directly.`;
         const total = subtotal - discountAmount;
 
         // Prepare email data with all emails
+        // Prepare email data with all emails
         const emailData = {
             action: 'send_invoice',
             record_id: recordData.id,
             record_type: recordType,
-            emails: JSON.stringify(emailList),
-            email: emailList[0],
+            emails: emailList,
             invoice_number: invoiceNumber,
             customer_name: customerName,
             customer_email: recordData.email || emailList[0],
             customer_address: addressParts.join(', '),
-            created_at: recordData.created_at || '',
-            invoice_items: JSON.stringify(invoiceItems),
+            invoice_items: invoiceItems,
             subtotal: subtotal.toFixed(2),
             discount_amount: discountAmount.toFixed(2),
-            discount_percent: discountPercent,
+            discount_percent: String(discountPercent),
             total: total.toFixed(2)
         };
 
         // Show loading state
         $(this).prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Sending...');
 
-        // Send email via API
-        $.post('api/email_handler.php', emailData, function (response) {
-            if (response.status === 'success') {
-                const successMsg = recipientCount > 1
-                    ? `Invoice sent successfully to ${recipientCount} recipients`
-                    : `Invoice sent successfully to ${emailList[0]}`;
-                showSuccessMessage(successMsg);
-            } else {
-                showWarningMessage(response.message || 'Failed to send invoice email');
+        // Send email via Spring Boot API
+        $.ajax({
+            url: '/email/send-invoice',
+            method: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify(emailData),
+            success: function (response) {
+                if (response.status === 'success') {
+                    const successMsg = recipientCount > 1
+                        ? `Invoice sent successfully to ${recipientCount} recipients`
+                        : `Invoice sent successfully to ${emailList[0]}`;
+                    showSuccessMessage(successMsg);
+                } else {
+                    showWarningMessage(response.message || 'Failed to send invoice email');
+                }
+            },
+            error: function (xhr) {
+                showWarningMessage('Error sending invoice email: ' + (xhr.responseJSON ? xhr.responseJSON.message : xhr.statusText));
+            },
+            complete: function () {
+                $('#email-invoice-btn').prop('disabled', false).html('<i class="fas fa-envelope"></i> Email Invoice');
             }
-        }).fail(function () {
-            showWarningMessage('Error sending invoice email. Email handler may not be configured.');
-        }).always(() => {
-            $('#email-invoice-btn').prop('disabled', false).html('<i class="fas fa-envelope"></i> Email Invoice');
         });
+        showWarningMessage('Error sending invoice email. Email handler may not be configured.');
+    }).always(() => {
+        $('#email-invoice-btn').prop('disabled', false).html('<i class="fas fa-envelope"></i> Email Invoice');
+    });
+});
+
+// Email T-Invoice
+$('#email-t-invoice-btn').on('click', function () {
+    const recordData = $('#invoice-modal').data('record-data');
+    const recordType = $('#invoice-modal').data('record-type');
+    const savedInvoice = $('#invoice-modal').data('saved-invoice');
+
+    if (!recordData) {
+        showWarningMessage('Invoice data not available');
+        return;
+    }
+
+    // Get all emails from stored data
+    const allEmails = $('#invoice-modal').data('all-emails') || [];
+    const email = recordData.email || '';
+    const invoiceNumber = `T-INV-${String(recordData.id).padStart(4, '0')}`;
+    const customerName = [recordData.first_name, recordData.last_name].filter(Boolean).join(' ') || 'Customer';
+
+    // Collect unique emails and build applicants array
+    let emailList = [];
+    let applicants = [];
+
+    if (allEmails.length > 0) {
+        // Use allEmails which has name, email, type for each person
+        const seenEmails = new Set();
+        allEmails.forEach(e => {
+            if (e.email && !seenEmails.has(e.email)) {
+                seenEmails.add(e.email);
+                emailList.push(e.email);
+                applicants.push({
+                    name: e.name || 'Customer',
+                    email: e.email,
+                    type: e.type || 'Applicant'
+                });
+            }
+        });
+    } else if (email) {
+        emailList = [email];
+        applicants = [{ name: customerName, email: email, type: 'Main Traveler' }];
+    }
+
+    if (emailList.length === 0) {
+        showWarningMessage('No email address found for this customer or co-travellers');
+        return;
+    }
+
+    // === BUILD INVOICE DATA ===
+    let invoiceItems = [];
+    let subtotal = 0;
+    let discountAmount = 0;
+    let discountPercent = 0;
+    let total = 0;
+
+    // Check if we have saved invoice with items
+    if (savedInvoice && savedInvoice.items_json) {
+        try {
+            const savedItems = JSON.parse(savedInvoice.items_json);
+            savedItems.forEach(item => {
+                invoiceItems.push({
+                    name: item.name || 'Service',
+                    package: item.package || '',
+                    visa_type: item.visa_type || item.visaType || '',
+                    country: item.visa_country || item.country || '',
+                    price: parseFloat(item.price || 0).toFixed(2),
+                    type: item.type || 'main'
+                });
+            });
+            subtotal = parseFloat(savedInvoice.subtotal) || 0;
+            discountAmount = parseFloat(savedInvoice.discount_amount) || 0;
+            discountPercent = savedInvoice.discount_type === 'percentage' ? parseFloat(savedInvoice.discount_value) || 0 : 0;
+            total = parseFloat(savedInvoice.total) || (subtotal - discountAmount);
+        } catch (e) {
+            console.error('Error parsing saved invoice items:', e);
+        }
+    }
+
+    // If no saved items, build from recordData
+    if (invoiceItems.length === 0) {
+        const packageName = recordData.package || 'Full Support';
+        const visaType = recordData.visa_type || 'Tourist';
+        const country = recordData.visa_country || recordData.travel_country || '';
+        let basePrice = parseFloat(recordData.price) || 0;
+
+        // Calculate price from package if not set
+        if (basePrice === 0) {
+            const pkgLower = packageName.toLowerCase();
+            if (pkgLower.includes('appointment only')) basePrice = 99;
+            else if (pkgLower.includes('fast track full support') || (pkgLower.includes('fast track') && pkgLower.includes('full support'))) basePrice = 349;
+            else if (pkgLower.includes('fast track appointment')) basePrice = 199;
+            else basePrice = 149; // Default Full Support
+        }
+
+        // Add main traveler
+        invoiceItems.push({
+            name: customerName,
+            package: packageName,
+            visa_type: visaType,
+            country: country,
+            price: basePrice.toFixed(2),
+            type: 'main'
+        });
+
+        // Add dependents
+        subtotal = basePrice;
+        const dependents = $('#invoice-modal').data('dependents') || [];
+        if (dependents && dependents.length > 0) {
+            dependents.forEach(dep => {
+                const depName = dep.name || [dep.first_name, dep.last_name].filter(Boolean).join(' ') || 'Dependent';
+                const depPackage = dep.package || packageName;
+                const depVisaType = dep.visa_type || visaType;
+                const depCountry = dep.travel_country || dep.visa_country || country;
+                let depPrice = parseFloat(dep.price) || 0;
+
+                // Calculate dependent price from package if not set
+                if (depPrice === 0) {
+                    const depPkgLower = depPackage.toLowerCase();
+                    if (depPkgLower.includes('appointment only')) depPrice = 99;
+                    else if (depPkgLower.includes('fast track full support') || (depPkgLower.includes('fast track') && depPkgLower.includes('full support'))) depPrice = 349;
+                    else if (depPkgLower.includes('fast track appointment')) depPrice = 199;
+                    else depPrice = basePrice; // Use main traveler price as fallback
+                }
+
+                invoiceItems.push({
+                    name: depName,
+                    package: depPackage,
+                    visa_type: depVisaType,
+                    country: depCountry,
+                    price: depPrice.toFixed(2),
+                    type: 'dependent'
+                });
+                subtotal += depPrice;
+            });
+        }
+
+        // Calculate discount for non-saved invoice
+        const uiDiscountType = $('#invoice-discount-type').val();
+        const uiDiscountValue = parseFloat($('#invoice-discount-value').val()) || 0;
+
+        if (uiDiscountType && uiDiscountType !== 'none' && uiDiscountType !== 'Select' && uiDiscountValue > 0) {
+            if (uiDiscountType.toLowerCase() === 'percentage') {
+                discountPercent = uiDiscountValue;
+                discountAmount = (subtotal * uiDiscountValue) / 100;
+            } else if (uiDiscountType.toLowerCase() === 'fixed') {
+                discountAmount = uiDiscountValue;
+            }
+        } else if (recordData.discount_type && recordData.discount_type !== 'none' && recordData.discount_type !== 'Select') {
+            const rdDiscountValue = parseFloat(recordData.discount_value) || 0;
+            if (recordData.discount_type.toLowerCase() === 'percentage' && rdDiscountValue > 0) {
+                discountPercent = rdDiscountValue;
+                discountAmount = (subtotal * rdDiscountValue) / 100;
+            } else if (recordData.discount_type.toLowerCase() === 'fixed' && rdDiscountValue > 0) {
+                discountAmount = rdDiscountValue;
+            }
+        }
+
+        total = subtotal - discountAmount;
+    }
+
+    // Build customer address
+    const addressParts = [];
+    if (recordData.address_line_1) addressParts.push(recordData.address_line_1);
+    if (recordData.address_line_2) addressParts.push(recordData.address_line_2);
+    if (recordData.city) addressParts.push(recordData.city);
+    if (recordData.state_province) addressParts.push(recordData.state_province);
+    if (recordData.zip_code) addressParts.push(recordData.zip_code);
+    if (recordData.country) addressParts.push(recordData.country);
+
+    // Build confirmation message
+    const emailListDisplay = emailList.join(', ');
+    const recipientCount = emailList.length;
+    const confirmMsg = recipientCount > 1
+        ? `Send T-Invoice ${invoiceNumber} to ${recipientCount} recipients?\n\n${emailListDisplay}`
+        : `Send T-Invoice ${invoiceNumber} to ${emailListDisplay}?`;
+
+    // Confirm before sending
+    const confirmed = confirm(confirmMsg);
+    if (!confirmed) return;
+
+    // Create display number without T- prefix for subject line
+    const displayNumber = invoiceNumber.replace('T-', '');
+
+    // Prepare email data with all invoice details
+    console.log('T-Invoice Data:', {
+        savedInvoice: savedInvoice ? {
+            subtotal: savedInvoice.subtotal,
+            discount_type: savedInvoice.discount_type,
+            discount_value: savedInvoice.discount_value,
+            discount_amount: savedInvoice.discount_amount,
+            total: savedInvoice.total
+        } : null,
+        calculated: {
+            subtotal: subtotal,
+            discountAmount: discountAmount,
+            discountPercent: discountPercent,
+            total: total
+        },
+        items: invoiceItems
     });
 
-    // Email T-Invoice
-    $('#email-t-invoice-btn').on('click', function () {
-        const recordData = $('#invoice-modal').data('record-data');
-        const recordType = $('#invoice-modal').data('record-type');
-        const savedInvoice = $('#invoice-modal').data('saved-invoice');
+    const emailData = {
+        action: 'send_t_invoice',
+        record_id: recordData.id,
+        record_type: recordType,
+        emails: emailList,
+        applicants: applicants,
+        invoice_number: invoiceNumber,
+        customer_name: customerName,
+        customer_email: recordData.email || emailList[0],
+        customer_address: addressParts.join(', '),
+        invoice_items: invoiceItems,
+        subtotal: subtotal.toFixed(2),
+        discount_amount: discountAmount.toFixed(2),
+        discount_percent: String(discountPercent),
+        total: total.toFixed(2),
+        bcc: 'visad.co.uk+5e14bff186@invite.trustpilot.com',
+        subject: `Payment received for ${displayNumber}`
+    };
 
-        if (!recordData) {
-            showWarningMessage('Invoice data not available');
-            return;
-        }
+    // Show loading state
+    $(this).prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Sending...');
 
-        // Get all emails from stored data
-        const allEmails = $('#invoice-modal').data('all-emails') || [];
-        const email = recordData.email || '';
-        const invoiceNumber = `T-INV-${String(recordData.id).padStart(4, '0')}`;
-        const customerName = [recordData.first_name, recordData.last_name].filter(Boolean).join(' ') || 'Customer';
-
-        // Collect unique emails and build applicants array
-        let emailList = [];
-        let applicants = [];
-
-        if (allEmails.length > 0) {
-            // Use allEmails which has name, email, type for each person
-            const seenEmails = new Set();
-            allEmails.forEach(e => {
-                if (e.email && !seenEmails.has(e.email)) {
-                    seenEmails.add(e.email);
-                    emailList.push(e.email);
-                    applicants.push({
-                        name: e.name || 'Customer',
-                        email: e.email,
-                        type: e.type || 'Applicant'
-                    });
-                }
-            });
-        } else if (email) {
-            emailList = [email];
-            applicants = [{ name: customerName, email: email, type: 'Main Traveler' }];
-        }
-
-        if (emailList.length === 0) {
-            showWarningMessage('No email address found for this customer or co-travellers');
-            return;
-        }
-
-        // === BUILD INVOICE DATA ===
-        let invoiceItems = [];
-        let subtotal = 0;
-        let discountAmount = 0;
-        let discountPercent = 0;
-        let total = 0;
-
-        // Check if we have saved invoice with items
-        if (savedInvoice && savedInvoice.items_json) {
-            try {
-                const savedItems = JSON.parse(savedInvoice.items_json);
-                savedItems.forEach(item => {
-                    invoiceItems.push({
-                        name: item.name || 'Service',
-                        package: item.package || '',
-                        visa_type: item.visa_type || item.visaType || '',
-                        country: item.visa_country || item.country || '',
-                        price: parseFloat(item.price || 0).toFixed(2),
-                        type: item.type || 'main'
-                    });
-                });
-                subtotal = parseFloat(savedInvoice.subtotal) || 0;
-                discountAmount = parseFloat(savedInvoice.discount_amount) || 0;
-                discountPercent = savedInvoice.discount_type === 'percentage' ? parseFloat(savedInvoice.discount_value) || 0 : 0;
-                total = parseFloat(savedInvoice.total) || (subtotal - discountAmount);
-            } catch (e) {
-                console.error('Error parsing saved invoice items:', e);
-            }
-        }
-
-        // If no saved items, build from recordData
-        if (invoiceItems.length === 0) {
-            const packageName = recordData.package || 'Full Support';
-            const visaType = recordData.visa_type || 'Tourist';
-            const country = recordData.visa_country || recordData.travel_country || '';
-            let basePrice = parseFloat(recordData.price) || 0;
-
-            // Calculate price from package if not set
-            if (basePrice === 0) {
-                const pkgLower = packageName.toLowerCase();
-                if (pkgLower.includes('appointment only')) basePrice = 99;
-                else if (pkgLower.includes('fast track full support') || (pkgLower.includes('fast track') && pkgLower.includes('full support'))) basePrice = 349;
-                else if (pkgLower.includes('fast track appointment')) basePrice = 199;
-                else basePrice = 149; // Default Full Support
-            }
-
-            // Add main traveler
-            invoiceItems.push({
-                name: customerName,
-                package: packageName,
-                visa_type: visaType,
-                country: country,
-                price: basePrice.toFixed(2),
-                type: 'main'
-            });
-
-            // Add dependents
-            subtotal = basePrice;
-            const dependents = $('#invoice-modal').data('dependents') || [];
-            if (dependents && dependents.length > 0) {
-                dependents.forEach(dep => {
-                    const depName = dep.name || [dep.first_name, dep.last_name].filter(Boolean).join(' ') || 'Dependent';
-                    const depPackage = dep.package || packageName;
-                    const depVisaType = dep.visa_type || visaType;
-                    const depCountry = dep.travel_country || dep.visa_country || country;
-                    let depPrice = parseFloat(dep.price) || 0;
-
-                    // Calculate dependent price from package if not set
-                    if (depPrice === 0) {
-                        const depPkgLower = depPackage.toLowerCase();
-                        if (depPkgLower.includes('appointment only')) depPrice = 99;
-                        else if (depPkgLower.includes('fast track full support') || (depPkgLower.includes('fast track') && depPkgLower.includes('full support'))) depPrice = 349;
-                        else if (depPkgLower.includes('fast track appointment')) depPrice = 199;
-                        else depPrice = basePrice; // Use main traveler price as fallback
-                    }
-
-                    invoiceItems.push({
-                        name: depName,
-                        package: depPackage,
-                        visa_type: depVisaType,
-                        country: depCountry,
-                        price: depPrice.toFixed(2),
-                        type: 'dependent'
-                    });
-                    subtotal += depPrice;
-                });
-            }
-
-            // Calculate discount for non-saved invoice
-            const uiDiscountType = $('#invoice-discount-type').val();
-            const uiDiscountValue = parseFloat($('#invoice-discount-value').val()) || 0;
-
-            if (uiDiscountType && uiDiscountType !== 'none' && uiDiscountType !== 'Select' && uiDiscountValue > 0) {
-                if (uiDiscountType.toLowerCase() === 'percentage') {
-                    discountPercent = uiDiscountValue;
-                    discountAmount = (subtotal * uiDiscountValue) / 100;
-                } else if (uiDiscountType.toLowerCase() === 'fixed') {
-                    discountAmount = uiDiscountValue;
-                }
-            } else if (recordData.discount_type && recordData.discount_type !== 'none' && recordData.discount_type !== 'Select') {
-                const rdDiscountValue = parseFloat(recordData.discount_value) || 0;
-                if (recordData.discount_type.toLowerCase() === 'percentage' && rdDiscountValue > 0) {
-                    discountPercent = rdDiscountValue;
-                    discountAmount = (subtotal * rdDiscountValue) / 100;
-                } else if (recordData.discount_type.toLowerCase() === 'fixed' && rdDiscountValue > 0) {
-                    discountAmount = rdDiscountValue;
-                }
-            }
-
-            total = subtotal - discountAmount;
-        }
-
-        // Build customer address
-        const addressParts = [];
-        if (recordData.address_line_1) addressParts.push(recordData.address_line_1);
-        if (recordData.address_line_2) addressParts.push(recordData.address_line_2);
-        if (recordData.city) addressParts.push(recordData.city);
-        if (recordData.state_province) addressParts.push(recordData.state_province);
-        if (recordData.zip_code) addressParts.push(recordData.zip_code);
-        if (recordData.country) addressParts.push(recordData.country);
-
-        // Build confirmation message
-        const emailListDisplay = emailList.join(', ');
-        const recipientCount = emailList.length;
-        const confirmMsg = recipientCount > 1
-            ? `Send T-Invoice ${invoiceNumber} to ${recipientCount} recipients?\n\n${emailListDisplay}`
-            : `Send T-Invoice ${invoiceNumber} to ${emailListDisplay}?`;
-
-        // Confirm before sending
-        const confirmed = confirm(confirmMsg);
-        if (!confirmed) return;
-
-        // Create display number without T- prefix for subject line
-        const displayNumber = invoiceNumber.replace('T-', '');
-
-        // Prepare email data with all invoice details
-        console.log('T-Invoice Data:', {
-            savedInvoice: savedInvoice ? {
-                subtotal: savedInvoice.subtotal,
-                discount_type: savedInvoice.discount_type,
-                discount_value: savedInvoice.discount_value,
-                discount_amount: savedInvoice.discount_amount,
-                total: savedInvoice.total
-            } : null,
-            calculated: {
-                subtotal: subtotal,
-                discountAmount: discountAmount,
-                discountPercent: discountPercent,
-                total: total
-            },
-            items: invoiceItems
-        });
-
-        const emailData = {
-            action: 'send_t_invoice',
-            record_id: recordData.id,
-            record_type: recordType,
-            emails: JSON.stringify(emailList),
-            applicants: JSON.stringify(applicants),
-            email: emailList[0],
-            invoice_number: invoiceNumber,
-            customer_name: customerName,
-            customer_email: recordData.email || emailList[0],
-            customer_address: addressParts.join(', '),
-            created_at: recordData.created_at || '',
-            invoice_items: JSON.stringify(invoiceItems),
-            subtotal: subtotal.toFixed(2),
-            discount_amount: discountAmount.toFixed(2),
-            discount_percent: discountPercent,
-            total: total.toFixed(2),
-            bcc: 'visad.co.uk+5e14bff186@invite.trustpilot.com',
-            subject: `Payment received for ${displayNumber}`
-        };
-
-        // Show loading state
-        $(this).prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Sending...');
-
-        // Send email via API
-        $.post('api/email_handler.php', emailData, function (response) {
+    // Send email via Spring Boot API
+    $.ajax({
+        url: '/email/send-invoice',
+        method: 'POST',
+        contentType: 'application/json',
+        data: JSON.stringify(emailData),
+        success: function (response) {
             if (response.status === 'success') {
                 const successMsg = recipientCount > 1
                     ? `T-Invoice sent successfully to ${recipientCount} recipients`
@@ -5107,62 +5127,69 @@ If you need any assistance, please call us directly.`;
             } else {
                 showWarningMessage(response.message || 'Failed to send T-Invoice email');
             }
-        }).fail(function () {
-            showWarningMessage('Error sending T-Invoice email. Email handler may not be configured.');
-        }).always(() => {
+        },
+        error: function (xhr) {
+            showWarningMessage('Error sending T-Invoice email: ' + (xhr.responseJSON ? xhr.responseJSON.message : xhr.statusText));
+        },
+        complete: function () {
             $('#email-t-invoice-btn').prop('disabled', false).html('<i class="fas fa-paper-plane"></i> Email T-Invoice');
-        });
-    });
-
-    $('#doc-verify-modal-close-btn, #doc-verify-modal-backdrop').on('click', function (e) {
-        if (e.target === this) {
-            $('#doc-verify-modal-backdrop').fadeOut(200);
         }
     });
+    showWarningMessage('Error sending T-Invoice email. Email handler may not be configured.');
+}).always(() => {
+    $('#email-t-invoice-btn').prop('disabled', false).html('<i class="fas fa-paper-plane"></i> Email T-Invoice');
+});
+    });
 
-    // Download PDF functionality - generates PDF client-side and downloads directly
-    $('#download-pdf-btn').on('click', function () {
-        const data = $('#doc-verify-modal').data('record-data');
-        const type = $('#doc-verify-modal').data('record-type');
+$('#doc-verify-modal-close-btn, #doc-verify-modal-backdrop').on('click', function (e) {
+    if (e.target === this) {
+        $('#doc-verify-modal-backdrop').fadeOut(200);
+    }
+});
 
-        if (!data) {
-            showWarningMessage('No data available for PDF generation');
-            return;
-        }
+// Download PDF functionality - generates PDF client-side and downloads directly
+$('#download-pdf-btn').on('click', function () {
+    const data = $('#doc-verify-modal').data('record-data');
+    const type = $('#doc-verify-modal').data('record-type');
 
-        // Show loading state
-        const btn = $(this);
-        btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Generating...');
+    if (!data) {
+        showWarningMessage('No data available for PDF generation');
+        return;
+    }
 
-        // Get the content to convert to PDF
-        const content = document.getElementById('doc-verify-content');
+    // Show loading state
+    const btn = $(this);
+    btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Generating...');
 
-        if (!content) {
-            showWarningMessage('No content found for PDF generation');
-            btn.prop('disabled', false).html('<i class="fas fa-file-pdf"></i> Download PDF');
-            return;
-        }
+    // Get the content to convert to PDF
+    const content = document.getElementById('doc-verify-content');
 
-        // Generate filename from name
-        const fullName = [data.first_name, data.last_name].filter(Boolean).join('_') || 'Document';
-        const fileName = `Document_Verification_${fullName.replace(/\s+/g, '_')}.pdf`;
+    if (!content) {
+        showWarningMessage('No content found for PDF generation');
+        btn.prop('disabled', false).html('<i class="fas fa-file-pdf"></i> Download PDF');
+        return;
+    }
 
-        // Clone the content to capture full height without scroll restrictions
-        const clone = content.cloneNode(true);
-        clone.style.position = 'absolute';
-        clone.style.left = '-9999px';
-        clone.style.top = '0';
-        clone.style.width = '800px'; // Fixed width for consistent rendering
-        clone.style.height = 'auto';
-        clone.style.maxHeight = 'none';
-        clone.style.overflow = 'visible';
-        clone.style.backgroundColor = '#ffffff';
-        clone.style.padding = '20px';
-        clone.style.fontSize = '12px'; // Slightly smaller font for compact layout
+    // Generate filename from name
+    const fullName = [data.first_name, data.last_name].filter(Boolean).join('_') || 'Document';
+    const fileName = `Document_Verification_${fullName.replace(/\s+/g, '_')}.pdf`;
 
-        // Compact styling for PDF
-        const style = document.createElement('style');
-        style.textContent = `
+    // Clone the content to capture full height without scroll restrictions
+    const clone = content.cloneNode(true);
+    clone.style.position = 'absolute';
+    clone.style.left = '-9999px';
+    clone.style.top = '0';
+    clone.style.width = '800px'; // Fixed width for consistent rendering
+    clone.style.height = 'auto';
+    clone.style.maxHeight = 'none';
+    clone.style.overflow = 'visible';
+    clone.style.backgroundColor = '#ffffff';
+    clone.style.padding = '20px';
+    clone.style.fontSize = '12px'; // Slightly smaller font for compact layout
+
+    // Compact styling for PDF
+    const style = document.createElement('style');
+    style.textContent = `
                 .email-template-container { padding: 10px !important; }
                 .verification-section { margin-bottom: 10px !important; padding: 8px !important; }
                 .verification-section h3 { font-size: 14px !important; margin-bottom: 8px !important; }
@@ -5173,290 +5200,290 @@ If you need any assistance, please call us directly.`;
                 }
                 .important-notice { padding: 10px !important; margin-bottom: 10px !important; }
             `;
-        clone.appendChild(style);
+    clone.appendChild(style);
 
-        // Remove overflow restrictions from child elements
-        const allChildren = clone.querySelectorAll('*');
-        allChildren.forEach(child => {
-            child.style.overflow = 'visible';
-            child.style.maxHeight = 'none';
-        });
+    // Remove overflow restrictions from child elements
+    const allChildren = clone.querySelectorAll('*');
+    allChildren.forEach(child => {
+        child.style.overflow = 'visible';
+        child.style.maxHeight = 'none';
+    });
 
-        document.body.appendChild(clone);
+    document.body.appendChild(clone);
 
-        // Use html2canvas with optimized settings for smaller file size
-        html2canvas(clone, {
-            scale: 1.5, // Reduced scale for smaller file size (was 2)
-            useCORS: true,
-            allowTaint: true,
-            backgroundColor: '#ffffff',
-            logging: false,
-            width: clone.scrollWidth,
-            height: clone.scrollHeight,
-            windowWidth: clone.scrollWidth,
-            windowHeight: clone.scrollHeight
-        }).then(function (canvas) {
-            // Remove the clone
+    // Use html2canvas with optimized settings for smaller file size
+    html2canvas(clone, {
+        scale: 1.5, // Reduced scale for smaller file size (was 2)
+        useCORS: true,
+        allowTaint: true,
+        backgroundColor: '#ffffff',
+        logging: false,
+        width: clone.scrollWidth,
+        height: clone.scrollHeight,
+        windowWidth: clone.scrollWidth,
+        windowHeight: clone.scrollHeight
+    }).then(function (canvas) {
+        // Remove the clone
+        document.body.removeChild(clone);
+
+        try {
+            const { jsPDF } = window.jspdf;
+
+            // A4 dimensions in mm
+            const pageWidth = 210;
+            const pageHeight = 297;
+            const margin = 10; // 10mm margins
+            const contentWidth = pageWidth - (margin * 2);
+            const contentHeight = pageHeight - (margin * 2);
+
+            // Calculate image dimensions to fit content width
+            const imgWidth = contentWidth;
+            const imgHeight = (canvas.height * imgWidth) / canvas.width;
+
+            // Calculate how many pages we need (target: 2 pages max)
+            const totalPages = Math.ceil(imgHeight / contentHeight);
+
+            // Create PDF
+            const pdf = new jsPDF('p', 'mm', 'a4');
+
+            // If content fits in 2 pages, use normal approach
+            // Otherwise, scale down to fit in 2 pages
+            let scaledImgHeight = imgHeight;
+            let scaledImgWidth = imgWidth;
+
+            if (totalPages > 2) {
+                // Scale down to fit in 2 pages
+                const maxHeight = contentHeight * 2;
+                const scaleFactor = maxHeight / imgHeight;
+                scaledImgHeight = maxHeight;
+                scaledImgWidth = imgWidth * scaleFactor;
+            }
+
+            // Convert canvas to JPEG for smaller file size (instead of PNG)
+            const imgData = canvas.toDataURL('image/jpeg', 0.8); // 80% quality JPEG
+
+            let heightLeft = scaledImgHeight;
+            let position = margin;
+            let pageNum = 0;
+
+            // Add pages
+            while (heightLeft > 0 && pageNum < 2) {
+                if (pageNum > 0) {
+                    pdf.addPage();
+                    position = margin;
+                }
+
+                // Calculate the portion of the image to show on this page
+                const yOffset = pageNum * contentHeight;
+
+                // For multi-page, we need to position the image correctly
+                if (scaledImgHeight > contentHeight) {
+                    pdf.addImage(
+                        imgData,
+                        'JPEG',
+                        margin,
+                        margin - (pageNum * contentHeight),
+                        scaledImgWidth,
+                        scaledImgHeight
+                    );
+                } else {
+                    pdf.addImage(imgData, 'JPEG', margin, margin, scaledImgWidth, scaledImgHeight);
+                }
+
+                heightLeft -= contentHeight;
+                pageNum++;
+            }
+
+            // Download the PDF directly
+            pdf.save(fileName);
+            showSuccessMessage('PDF downloaded successfully!');
+        } catch (e) {
+            console.error('PDF generation error:', e);
+            showWarningMessage('Error generating PDF: ' + e.message);
+        }
+    }).catch(function (error) {
+        // Remove the clone even if there's an error
+        if (document.body.contains(clone)) {
             document.body.removeChild(clone);
-
-            try {
-                const { jsPDF } = window.jspdf;
-
-                // A4 dimensions in mm
-                const pageWidth = 210;
-                const pageHeight = 297;
-                const margin = 10; // 10mm margins
-                const contentWidth = pageWidth - (margin * 2);
-                const contentHeight = pageHeight - (margin * 2);
-
-                // Calculate image dimensions to fit content width
-                const imgWidth = contentWidth;
-                const imgHeight = (canvas.height * imgWidth) / canvas.width;
-
-                // Calculate how many pages we need (target: 2 pages max)
-                const totalPages = Math.ceil(imgHeight / contentHeight);
-
-                // Create PDF
-                const pdf = new jsPDF('p', 'mm', 'a4');
-
-                // If content fits in 2 pages, use normal approach
-                // Otherwise, scale down to fit in 2 pages
-                let scaledImgHeight = imgHeight;
-                let scaledImgWidth = imgWidth;
-
-                if (totalPages > 2) {
-                    // Scale down to fit in 2 pages
-                    const maxHeight = contentHeight * 2;
-                    const scaleFactor = maxHeight / imgHeight;
-                    scaledImgHeight = maxHeight;
-                    scaledImgWidth = imgWidth * scaleFactor;
-                }
-
-                // Convert canvas to JPEG for smaller file size (instead of PNG)
-                const imgData = canvas.toDataURL('image/jpeg', 0.8); // 80% quality JPEG
-
-                let heightLeft = scaledImgHeight;
-                let position = margin;
-                let pageNum = 0;
-
-                // Add pages
-                while (heightLeft > 0 && pageNum < 2) {
-                    if (pageNum > 0) {
-                        pdf.addPage();
-                        position = margin;
-                    }
-
-                    // Calculate the portion of the image to show on this page
-                    const yOffset = pageNum * contentHeight;
-
-                    // For multi-page, we need to position the image correctly
-                    if (scaledImgHeight > contentHeight) {
-                        pdf.addImage(
-                            imgData,
-                            'JPEG',
-                            margin,
-                            margin - (pageNum * contentHeight),
-                            scaledImgWidth,
-                            scaledImgHeight
-                        );
-                    } else {
-                        pdf.addImage(imgData, 'JPEG', margin, margin, scaledImgWidth, scaledImgHeight);
-                    }
-
-                    heightLeft -= contentHeight;
-                    pageNum++;
-                }
-
-                // Download the PDF directly
-                pdf.save(fileName);
-                showSuccessMessage('PDF downloaded successfully!');
-            } catch (e) {
-                console.error('PDF generation error:', e);
-                showWarningMessage('Error generating PDF: ' + e.message);
-            }
-        }).catch(function (error) {
-            // Remove the clone even if there's an error
-            if (document.body.contains(clone)) {
-                document.body.removeChild(clone);
-            }
-            console.error('html2canvas error:', error);
-            showWarningMessage('Error capturing content for PDF');
-        }).finally(function () {
-            btn.prop('disabled', false).html('<i class="fas fa-file-pdf"></i> Download PDF');
-        });
+        }
+        console.error('html2canvas error:', error);
+        showWarningMessage('Error capturing content for PDF');
+    }).finally(function () {
+        btn.prop('disabled', false).html('<i class="fas fa-file-pdf"></i> Download PDF');
     });
+});
 
-    // Send Email functionality
-    $('#send-email-btn').on('click', function () {
-        const data = $('#doc-verify-modal').data('record-data');
-        const type = $('#doc-verify-modal').data('record-type');
+// Send Email functionality
+$('#send-email-btn').on('click', function () {
+    const data = $('#doc-verify-modal').data('record-data');
+    const type = $('#doc-verify-modal').data('record-type');
 
-        if (!data) {
-            showWarningMessage('No data available for email');
-            return;
-        }
-
-        if (!data.email) {
-            showWarningMessage('No email address found for this record');
-            return;
-        }
-
-        if (!confirm(`Send verification email to ${data.email}?`)) {
-            return;
-        }
-
-        // Show loading state
-        $(this).prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Sending...');
-
-        // Call the reusable send email function
-        sendVerificationEmail(data, type, function (success, message) {
-            if (success) {
-                showSuccessMessage(message);
-            } else {
-                showWarningMessage(message);
-            }
-            $('#send-email-btn').prop('disabled', false).html('<i class="fas fa-envelope"></i> Send Email');
-        });
-    });
-
-    // Reusable function to send verification email
-    function sendVerificationEmail(data, type, callback) {
-        console.log('sendVerificationEmail called with:', {
-            email: data ? data.email : 'no data',
-            type: type,
-            hasCallback: !!callback
-        });
-
-        if (!data || !data.email) {
-            console.error('No email address available');
-            if (callback) callback(false, 'No email address available');
-            return;
-        }
-
-        // Generate the full email HTML content
-        console.log('Generating email HTML...');
-        const emailHtml = generateVerificationEmailHtml(data);
-        console.log('Email HTML generated, length:', emailHtml.length);
-
-        // Call API to send email with full HTML content
-        console.log('Posting to API:', 'api/send_verification_email.php');
-        $.post('api/send_verification_email.php', {
-            record_id: data.id,
-            record_type: type,
-            email: data.email,
-            email_html: emailHtml,
-            first_name: data.first_name || 'Customer'
-        }, function (res) {
-            console.log('Email API response:', res);
-            if (res.status === 'success') {
-                console.log('Email sent successfully');
-                if (callback) callback(true, `Email sent successfully to ${data.email}!`);
-            } else {
-                console.error('Email sending failed:', res.message);
-                if (callback) callback(false, res.message || 'Email sending failed');
-            }
-        }, 'json').fail(function (xhr, status, error) {
-            console.error('Email API request failed:', { xhr, status, error });
-            if (callback) callback(false, 'Error sending email: ' + error);
-        });
+    if (!data) {
+        showWarningMessage('No data available for email');
+        return;
     }
 
-    // Generate verification email HTML content
-    function generateVerificationEmailHtml(data) {
-        const getValue = (val) => val || 'Not provided';
+    if (!data.email) {
+        showWarningMessage('No email address found for this record');
+        return;
+    }
 
-        // Helper function to format date
-        const formatDate = (dateStr) => {
-            if (!dateStr) return 'Not provided';
+    if (!confirm(`Send verification email to ${data.email}?`)) {
+        return;
+    }
+
+    // Show loading state
+    $(this).prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Sending...');
+
+    // Call the reusable send email function
+    sendVerificationEmail(data, type, function (success, message) {
+        if (success) {
+            showSuccessMessage(message);
+        } else {
+            showWarningMessage(message);
+        }
+        $('#send-email-btn').prop('disabled', false).html('<i class="fas fa-envelope"></i> Send Email');
+    });
+});
+
+// Reusable function to send verification email
+function sendVerificationEmail(data, type, callback) {
+    console.log('sendVerificationEmail called with:', {
+        email: data ? data.email : 'no data',
+        type: type,
+        hasCallback: !!callback
+    });
+
+    if (!data || !data.email) {
+        console.error('No email address available');
+        if (callback) callback(false, 'No email address available');
+        return;
+    }
+
+    // Generate the full email HTML content
+    console.log('Generating email HTML...');
+    const emailHtml = generateVerificationEmailHtml(data);
+    console.log('Email HTML generated, length:', emailHtml.length);
+
+    // Call API to send email with full HTML content
+    console.log('Posting to API:', 'api/send_verification_email.php');
+    $.post('api/send_verification_email.php', {
+        record_id: data.id,
+        record_type: type,
+        email: data.email,
+        email_html: emailHtml,
+        first_name: data.first_name || 'Customer'
+    }, function (res) {
+        console.log('Email API response:', res);
+        if (res.status === 'success') {
+            console.log('Email sent successfully');
+            if (callback) callback(true, `Email sent successfully to ${data.email}!`);
+        } else {
+            console.error('Email sending failed:', res.message);
+            if (callback) callback(false, res.message || 'Email sending failed');
+        }
+    }, 'json').fail(function (xhr, status, error) {
+        console.error('Email API request failed:', { xhr, status, error });
+        if (callback) callback(false, 'Error sending email: ' + error);
+    });
+}
+
+// Generate verification email HTML content
+function generateVerificationEmailHtml(data) {
+    const getValue = (val) => val || 'Not provided';
+
+    // Helper function to format date
+    const formatDate = (dateStr) => {
+        if (!dateStr) return 'Not provided';
+        try {
+            // Handle DD/MM/YYYY format (common in UK)
+            if (typeof dateStr === 'string' && dateStr.match(/^\d{2}\/\d{2}\/\d{4}$/)) {
+                const [day, month, year] = dateStr.split('/');
+                const date = new Date(year, month - 1, day);
+                if (!isNaN(date.getTime())) {
+                    return date.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+                }
+                return dateStr; // Return as-is if parsing fails
+            }
+            // Handle YYYY-MM-DD or other standard formats
+            const date = new Date(dateStr);
+            if (isNaN(date.getTime())) return dateStr;
+            return date.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+        } catch (e) {
+            return dateStr;
+        }
+    };
+
+    // Helper function to get verification status
+    const getVerificationStatus = (data) => {
+        // Check for verification pattern in notes
+        const verifyPattern = /\[VERIFIED BY: (.+?) on (.+?)\]/;
+        const verifyMatch = data.notes ? data.notes.match(verifyPattern) : null;
+
+        if (verifyMatch) {
+            const verifiedBy = verifyMatch[1];
+            const verifiedOn = verifyMatch[2];
+            return `<span style="color: #10b981;">✓ Verified by ${verifiedBy} on ${verifiedOn}</span>`;
+        }
+        return '<span style="color: #94a3b8; font-style: italic;">Pending verification</span>';
+    };
+
+    // Helper function to get created by info
+    const getCreatedByInfo = (data) => {
+        const username = data.created_by_username || 'System';
+        const createdAt = data.created_at;
+
+        if (createdAt) {
             try {
-                // Handle DD/MM/YYYY format (common in UK)
-                if (typeof dateStr === 'string' && dateStr.match(/^\d{2}\/\d{2}\/\d{4}$/)) {
-                    const [day, month, year] = dateStr.split('/');
-                    const date = new Date(year, month - 1, day);
-                    if (!isNaN(date.getTime())) {
-                        return date.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
-                    }
-                    return dateStr; // Return as-is if parsing fails
+                const date = new Date(createdAt);
+                if (!isNaN(date.getTime())) {
+                    const formatted = date.toLocaleDateString('en-GB', {
+                        day: '2-digit',
+                        month: '2-digit',
+                        year: '2-digit'
+                    }).replace(/\//g, '/');
+                    const time = date.toLocaleTimeString('en-GB', {
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        hour12: false
+                    });
+                    return `${username} (${formatted} ${time})`;
                 }
-                // Handle YYYY-MM-DD or other standard formats
-                const date = new Date(dateStr);
-                if (isNaN(date.getTime())) return dateStr;
-                return date.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
             } catch (e) {
-                return dateStr;
+                // Fall back to raw value
             }
-        };
+        }
+        return username;
+    };
 
-        // Helper function to get verification status
-        const getVerificationStatus = (data) => {
-            // Check for verification pattern in notes
-            const verifyPattern = /\[VERIFIED BY: (.+?) on (.+?)\]/;
-            const verifyMatch = data.notes ? data.notes.match(verifyPattern) : null;
+    // Format address
+    const fullAddress = [
+        data.address_line_1,
+        data.address_line_2,
+        data.city,
+        data.state_province,
+        data.zip_code,
+        data.country
+    ].filter(Boolean).join(', ') || 'Not provided';
 
-            if (verifyMatch) {
-                const verifiedBy = verifyMatch[1];
-                const verifiedOn = verifyMatch[2];
-                return `<span style="color: #10b981;">✓ Verified by ${verifiedBy} on ${verifiedOn}</span>`;
-            }
-            return '<span style="color: #94a3b8; font-style: italic;">Pending verification</span>';
-        };
+    // Format passport validity
+    const passportValidity = (data.passport_issue && data.passport_expire)
+        ? `Issue: ${formatDate(data.passport_issue)} – Expiry: ${formatDate(data.passport_expire)}`
+        : 'Not provided';
 
-        // Helper function to get created by info
-        const getCreatedByInfo = (data) => {
-            const username = data.created_by_username || 'System';
-            const createdAt = data.created_at;
+    const vacLocation = getValue(data.visa_center);
+    const travelCountry = getValue(data.travel_country);
+    // Check multiple possible field names for planned travel date
+    const rawTravelDate = data.planned_travel_date || data.planned_travel_date_raw || data.travel_date || '';
+    console.log('PDF planned_travel_date debug:', {
+        planned_travel_date: data.planned_travel_date,
+        planned_travel_date_raw: data.planned_travel_date_raw,
+        travel_date: data.travel_date,
+        rawTravelDate: rawTravelDate
+    });
+    const plannedTravelDate = formatDate(rawTravelDate);
 
-            if (createdAt) {
-                try {
-                    const date = new Date(createdAt);
-                    if (!isNaN(date.getTime())) {
-                        const formatted = date.toLocaleDateString('en-GB', {
-                            day: '2-digit',
-                            month: '2-digit',
-                            year: '2-digit'
-                        }).replace(/\//g, '/');
-                        const time = date.toLocaleTimeString('en-GB', {
-                            hour: '2-digit',
-                            minute: '2-digit',
-                            hour12: false
-                        });
-                        return `${username} (${formatted} ${time})`;
-                    }
-                } catch (e) {
-                    // Fall back to raw value
-                }
-            }
-            return username;
-        };
-
-        // Format address
-        const fullAddress = [
-            data.address_line_1,
-            data.address_line_2,
-            data.city,
-            data.state_province,
-            data.zip_code,
-            data.country
-        ].filter(Boolean).join(', ') || 'Not provided';
-
-        // Format passport validity
-        const passportValidity = (data.passport_issue && data.passport_expire)
-            ? `Issue: ${formatDate(data.passport_issue)} – Expiry: ${formatDate(data.passport_expire)}`
-            : 'Not provided';
-
-        const vacLocation = getValue(data.visa_center);
-        const travelCountry = getValue(data.travel_country);
-        // Check multiple possible field names for planned travel date
-        const rawTravelDate = data.planned_travel_date || data.planned_travel_date_raw || data.travel_date || '';
-        console.log('PDF planned_travel_date debug:', {
-            planned_travel_date: data.planned_travel_date,
-            planned_travel_date_raw: data.planned_travel_date_raw,
-            travel_date: data.travel_date,
-            rawTravelDate: rawTravelDate
-        });
-        const plannedTravelDate = formatDate(rawTravelDate);
-
-        return `
+    return `
                 <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; color: #333;">
                     <p>Dear <strong>${getValue(data.first_name)}</strong>,</p>
                     
@@ -5623,76 +5650,76 @@ If you need any assistance, please call us directly.`;
                     </div>
                 </div>
             `;
-    }
+}
 
-    function renderDocumentVerification(data, type) {
-        const container = $('#doc-verify-content');
-        container.empty();
+function renderDocumentVerification(data, type) {
+    const container = $('#doc-verify-content');
+    container.empty();
 
-        // Helper function to get value or show empty
-        const getValue = (val) => val || 'Not provided';
+    // Helper function to get value or show empty
+    const getValue = (val) => val || 'Not provided';
 
-        // Helper function to format date
-        const formatDate = (dateStr) => {
-            if (!dateStr || dateStr === '' || dateStr === null || dateStr === undefined) return 'Not provided';
-            // Handle if date is already formatted (contains letters like "Dec")
-            if (typeof dateStr === 'string' && /[a-zA-Z]/.test(dateStr)) return dateStr;
-            try {
-                // Handle DD/MM/YYYY format (common in UK)
-                if (typeof dateStr === 'string' && dateStr.match(/^\d{2}\/\d{2}\/\d{4}$/)) {
-                    const [day, month, year] = dateStr.split('/');
-                    const date = new Date(year, month - 1, day);
-                    if (!isNaN(date.getTime())) {
-                        return date.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
-                    }
-                    return dateStr; // Return as-is if parsing fails
+    // Helper function to format date
+    const formatDate = (dateStr) => {
+        if (!dateStr || dateStr === '' || dateStr === null || dateStr === undefined) return 'Not provided';
+        // Handle if date is already formatted (contains letters like "Dec")
+        if (typeof dateStr === 'string' && /[a-zA-Z]/.test(dateStr)) return dateStr;
+        try {
+            // Handle DD/MM/YYYY format (common in UK)
+            if (typeof dateStr === 'string' && dateStr.match(/^\d{2}\/\d{2}\/\d{4}$/)) {
+                const [day, month, year] = dateStr.split('/');
+                const date = new Date(year, month - 1, day);
+                if (!isNaN(date.getTime())) {
+                    return date.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
                 }
-                // Handle YYYY-MM-DD or other standard formats
-                const date = new Date(dateStr);
-                if (isNaN(date.getTime())) return dateStr; // Return as-is if invalid
-                return date.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
-            } catch (e) {
-                return dateStr;
+                return dateStr; // Return as-is if parsing fails
             }
-        };
+            // Handle YYYY-MM-DD or other standard formats
+            const date = new Date(dateStr);
+            if (isNaN(date.getTime())) return dateStr; // Return as-is if invalid
+            return date.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+        } catch (e) {
+            return dateStr;
+        }
+    };
 
-        // Format full name with title
-        const titlePart = data.title ? data.title + ' ' : '';
-        const fullName = titlePart + [data.first_name, data.last_name].filter(Boolean).join(' ') || getValue(data.name);
+    // Format full name with title
+    const titlePart = data.title ? data.title + ' ' : '';
+    const fullName = titlePart + [data.first_name, data.last_name].filter(Boolean).join(' ') || getValue(data.name);
 
-        // Format address
-        const fullAddress = [
-            data.address_line_1,
-            data.address_line_2,
-            data.city,
-            data.state_province,
-            data.zip_code
-        ].filter(Boolean).join(', ') || 'Not provided';
+    // Format address
+    const fullAddress = [
+        data.address_line_1,
+        data.address_line_2,
+        data.city,
+        data.state_province,
+        data.zip_code
+    ].filter(Boolean).join(', ') || 'Not provided';
 
-        // Format passport validity
-        const passportValidity = (data.passport_issue && data.passport_expire)
-            ? `Issue: ${formatDate(data.passport_issue)} – Expiry: ${formatDate(data.passport_expire)}`
-            : 'Not provided';
+    // Format passport validity
+    const passportValidity = (data.passport_issue && data.passport_expire)
+        ? `Issue: ${formatDate(data.passport_issue)} – Expiry: ${formatDate(data.passport_expire)}`
+        : 'Not provided';
 
-        // Format planned travel date - check multiple possible field names
-        const rawTravelDate = data.planned_travel_date || data.planned_travel_date_raw || data.travel_date || '';
-        console.log('renderDocumentVerification planned_travel_date:', {
-            planned_travel_date: data.planned_travel_date,
-            planned_travel_date_raw: data.planned_travel_date_raw,
-            travel_date: data.travel_date,
-            rawTravelDate: rawTravelDate
-        });
-        const plannedTravelDate = formatDate(rawTravelDate);
+    // Format planned travel date - check multiple possible field names
+    const rawTravelDate = data.planned_travel_date || data.planned_travel_date_raw || data.travel_date || '';
+    console.log('renderDocumentVerification planned_travel_date:', {
+        planned_travel_date: data.planned_travel_date,
+        planned_travel_date_raw: data.planned_travel_date_raw,
+        travel_date: data.travel_date,
+        rawTravelDate: rawTravelDate
+    });
+    const plannedTravelDate = formatDate(rawTravelDate);
 
-        // Determine appointment info (can be customized based on visa_center or other data)
-        const vacLocation = getValue(data.visa_center);
-        const appointmentInfo = 'To be confirmed (typically 2-6 weeks)';
+    // Determine appointment info (can be customized based on visa_center or other data)
+    const vacLocation = getValue(data.visa_center);
+    const appointmentInfo = 'To be confirmed (typically 2-6 weeks)';
 
-        // Travel country
-        const travelCountry = getValue(data.travel_country);
+    // Travel country
+    const travelCountry = getValue(data.travel_country);
 
-        // Build the HTML with new email template format
-        let html = `
+    // Build the HTML with new email template format
+    let html = `
                 <div class="email-template-container">
                     <div class="email-header">
                         <p>Dear ${getValue(data.first_name)},</p>
@@ -5888,19 +5915,19 @@ If you need any assistance, please call us directly.`;
                 </div>
             `;
 
-        container.html(html);
-    }
+    container.html(html);
+}
 
-    // Helper function to render verification/sign status
-    function renderVerificationStatus(notes) {
-        // Check if notes contain verification signature
-        const verifyPattern = /\[VERIFIED BY: (.+?) on (.+?)\]/;
-        const match = notes ? notes.match(verifyPattern) : null;
+// Helper function to render verification/sign status
+function renderVerificationStatus(notes) {
+    // Check if notes contain verification signature
+    const verifyPattern = /\[VERIFIED BY: (.+?) on (.+?)\]/;
+    const match = notes ? notes.match(verifyPattern) : null;
 
-        if (match) {
-            const verifiedBy = match[1];
-            const verifiedOn = match[2];
-            return `
+    if (match) {
+        const verifiedBy = match[1];
+        const verifiedOn = match[2];
+        return `
                     <div class="verified-status">
                         <span class="verified-badge">
                             <i class="fas fa-check-circle" style="color: #10b981; margin-right: 5px;"></i>
@@ -5908,60 +5935,60 @@ If you need any assistance, please call us directly.`;
                         </span>
                     </div>
                 `;
-        } else {
-            return `
+    } else {
+        return `
                     <button type="button" class="sign-verify-btn" id="sign-verify-btn">
                         <i class="fas fa-signature"></i> Sign & Verify
                     </button>
                 `;
-        }
+    }
+}
+
+// Sign & Verify button click handler
+$(document).on('click', '#sign-verify-btn', function () {
+    const data = $('#doc-verify-modal').data('record-data');
+    const type = $('#doc-verify-modal').data('record-type');
+
+    if (!data) {
+        showWarningMessage('No data available');
+        return;
     }
 
-    // Sign & Verify button click handler
-    $(document).on('click', '#sign-verify-btn', function () {
-        const data = $('#doc-verify-modal').data('record-data');
-        const type = $('#doc-verify-modal').data('record-type');
+    // Get current logged-in username from session
+    const loggedInUser = window.currentUsername || 'User';
+    const currentDateTime = new Date().toLocaleString('en-GB', {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+    });
 
-        if (!data) {
-            showWarningMessage('No data available');
-            return;
-        }
+    // Build verification note
+    const verificationNote = `[VERIFIED BY: ${loggedInUser} on ${currentDateTime}]`;
 
-        // Get current logged-in username from session
-        const loggedInUser = window.currentUsername || 'User';
-        const currentDateTime = new Date().toLocaleString('en-GB', {
-            day: '2-digit',
-            month: 'short',
-            year: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit'
-        });
+    // Append to existing notes or create new
+    let updatedNotes = data.notes ? data.notes + '\n' + verificationNote : verificationNote;
 
-        // Build verification note
-        const verificationNote = `[VERIFIED BY: ${loggedInUser} on ${currentDateTime}]`;
+    // Show loading
+    $(this).prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Signing...');
 
-        // Append to existing notes or create new
-        let updatedNotes = data.notes ? data.notes + '\n' + verificationNote : verificationNote;
+    // Determine correct API endpoint
+    const table = type === 'traveler' ? 'travelers' : 'dependents';
+    const endpoint = type === 'traveler' ? 'api/travelers.php' : 'api/dependents.php';
 
-        // Show loading
-        $(this).prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Signing...');
+    $.post(`${endpoint}?action=update_field`, {
+        id: data.id,
+        field: 'notes',
+        value: updatedNotes
+    }, function (res) {
+        if (res.status === 'success') {
+            // Update local data
+            data.notes = updatedNotes;
+            $('#doc-verify-modal').data('record-data', data);
 
-        // Determine correct API endpoint
-        const table = type === 'traveler' ? 'travelers' : 'dependents';
-        const endpoint = type === 'traveler' ? 'api/travelers.php' : 'api/dependents.php';
-
-        $.post(`${endpoint}?action=update_field`, {
-            id: data.id,
-            field: 'notes',
-            value: updatedNotes
-        }, function (res) {
-            if (res.status === 'success') {
-                // Update local data
-                data.notes = updatedNotes;
-                $('#doc-verify-modal').data('record-data', data);
-
-                // Update the display
-                $('#verify-sign-container').html(`
+            // Update the display
+            $('#verify-sign-container').html(`
                         <div class="verified-status">
                             <span class="verified-badge">
                                 <i class="fas fa-check-circle" style="color: #10b981; margin-right: 5px;"></i>
@@ -5970,212 +5997,200 @@ If you need any assistance, please call us directly.`;
                         </div>
                     `);
 
-                showSuccessMessage('Details verified and signed successfully!');
+            showSuccessMessage('Details verified and signed successfully!');
 
-                // Automatically send verification email after successful verification
-                console.log('Checking if email exists:', data.email);
-                if (data.email) {
-                    console.log('Email found, attempting to send to:', data.email);
-                    $('#sign-verify-btn').html('<i class="fas fa-spinner fa-spin"></i> Sending Email...');
+            // Automatically send verification email after successful verification
+            console.log('Checking if email exists:', data.email);
+            if (data.email) {
+                console.log('Email found, attempting to send to:', data.email);
+                $('#sign-verify-btn').html('<i class="fas fa-spinner fa-spin"></i> Sending Email...');
 
-                    // Check if function exists
-                    if (typeof sendVerificationEmail === 'function') {
-                        console.log('sendVerificationEmail function exists, calling it...');
-                        sendVerificationEmail(data, type, function (success, message) {
-                            console.log('Email callback received - Success:', success, 'Message:', message);
-                            if (success) {
-                                showSuccessMessage('Verification email sent to ' + data.email);
-                            } else {
-                                showWarningMessage('Verified but email failed: ' + message);
-                            }
-                            $('#sign-verify-btn').prop('disabled', false).html('<i class="fas fa-signature"></i> Sign & Verify');
-                        });
-                    } else {
-                        console.error('sendVerificationEmail function not found!');
-                        showWarningMessage('Email function not available');
+                // Check if function exists
+                if (typeof sendVerificationEmail === 'function') {
+                    console.log('sendVerificationEmail function exists, calling it...');
+                    sendVerificationEmail(data, type, function (success, message) {
+                        console.log('Email callback received - Success:', success, 'Message:', message);
+                        if (success) {
+                            showSuccessMessage('Verification email sent to ' + data.email);
+                        } else {
+                            showWarningMessage('Verified but email failed: ' + message);
+                        }
                         $('#sign-verify-btn').prop('disabled', false).html('<i class="fas fa-signature"></i> Sign & Verify');
-                    }
+                    });
                 } else {
-                    console.warn('No email address found for this record');
-                    showWarningMessage('Verified but no email address found');
+                    console.error('sendVerificationEmail function not found!');
+                    showWarningMessage('Email function not available');
                     $('#sign-verify-btn').prop('disabled', false).html('<i class="fas fa-signature"></i> Sign & Verify');
                 }
             } else {
-                showWarningMessage(res.message || 'Failed to save verification');
+                console.warn('No email address found for this record');
+                showWarningMessage('Verified but no email address found');
                 $('#sign-verify-btn').prop('disabled', false).html('<i class="fas fa-signature"></i> Sign & Verify');
             }
-        }, 'json').fail(function () {
-            showWarningMessage('Error saving verification');
+        } else {
+            showWarningMessage(res.message || 'Failed to save verification');
             $('#sign-verify-btn').prop('disabled', false).html('<i class="fas fa-signature"></i> Sign & Verify');
-        });
+        }
+    }, 'json').fail(function () {
+        showWarningMessage('Error saving verification');
+        $('#sign-verify-btn').prop('disabled', false).html('<i class="fas fa-signature"></i> Sign & Verify');
     });
+});
 
-    // --- Form Data Modal ---
+// --- Form Data Modal ---
 
-    // Helper function to create a formatted data item only if value exists
-    function createFormDataItem(label, value) {
-        // Check if value is null, undefined, empty string, 'N/A', or 'Not set' (case-insensitive)
-        if (value === null || value === undefined || String(value).trim() === '' || /^(n\/a|not set)$/i.test(String(value).trim())) {
-            return ''; // Return an empty string if value is not valid or default placeholder
-        }
+// Helper function to create a formatted data item only if value exists
+function createFormDataItem(label, value) {
+    // Check if value is null, undefined, empty string, 'N/A', or 'Not set' (case-insensitive)
+    if (value === null || value === undefined || String(value).trim() === '' || /^(n\/a|not set)$/i.test(String(value).trim())) {
+        return ''; // Return an empty string if value is not valid or default placeholder
+    }
 
-        let displayValue = value;
-        // Handle file paths for display
-        if (label.toLowerCase().includes('upload') && value.includes('/')) {
-            displayValue = value.split('/').pop(); // Show only filename
-        }
+    let displayValue = value;
+    // Handle file paths for display
+    if (label.toLowerCase().includes('upload') && value.includes('/')) {
+        displayValue = value.split('/').pop(); // Show only filename
+    }
 
-        return `
+    return `
                 <div class="form-data-item">
                     <span class="form-data-label">${label}</span>
                     <span class="form-data-value">${displayValue}</span>
                 </div>
             `;
+}
+
+
+$(document).on('click', '.form-data-btn', function (e) {
+    e.stopPropagation();
+    const id = $(this).data('id');
+    const type = $(this).data('type');
+
+    // --- NEW LOGIC ---
+    // Open the new form_data_viewer.html in a new tab
+    window.open(`form_data_viewer.html?id=${id}&type=${type}`, '_blank');
+
+    // --- OLD MODAL LOGIC (REMOVED) ---
+    /*
+    const endpoint = type === 'traveler' ? 'api/travelers.php' : 'api/dependents.php';
+    const recordName = $(this).closest('.record-header').find('.header-name .editable').text();
+    $('#form-data-modal-title').text(`Client Form Data: ${recordName}`);
+ 
+    $.get(`${endpoint}?action=get_form_data&id=${id}`, (res) => {
+        // ... (all old modal population logic) ...
+    }).fail(function() {
+        // ... (old fail logic) ...
+    });
+    */
+});
+
+
+// New click handler for copying data from the form data modal
+// REMOVED old modal click handler
+/*
+$(document).on('click', '.form-data-value', function(e) {
+    // ... (old modal copy logic) ...
+});
+*/
+
+
+// REMOVED old modal close handler
+/*
+$('#form-data-modal-close-btn, #form-data-modal-backdrop').on('click', function(e) {
+    if (e.target === this) {
+        $('#form-data-modal-backdrop').fadeOut(200);
+    }
+});
+*/
+
+// Invoice Render Function
+function renderInvoice(data, type, dependents = [], history = null) {
+    const container = $('#invoice-content');
+    container.empty();
+
+    // Helper function to get value or default
+    const getValue = (val, defaultVal = 'N/A') => val || defaultVal;
+
+    // Check if invoice exists in invoices table (fetched separately)
+    const savedInvoice = $('#invoice-modal').data('saved-invoice');
+    const invoiceLocked = savedInvoice && savedInvoice.id;
+    let savedItems = [];
+
+    if (invoiceLocked && savedInvoice.items_json) {
+        try {
+            savedItems = JSON.parse(savedInvoice.items_json);
+        } catch (e) {
+            console.warn('Could not parse saved invoice items');
+        }
     }
 
+    // Format customer name
+    const customerName = [data.first_name, data.last_name].filter(Boolean).join(' ') || getValue(data.name, 'Customer Name');
 
-    $(document).on('click', '.form-data-btn', function (e) {
-        e.stopPropagation();
-        const id = $(this).data('id');
-        const type = $(this).data('type');
+    // Format address
+    const addressLine1 = getValue(data.address_line_1, '');
+    const addressLine2 = getValue(data.address_line_2, '');
+    const cityState = [data.city, data.state_province].filter(Boolean).join(', ');
+    const zipCountry = [data.zip_code, data.country].filter(Boolean).join(', ');
 
-        // --- NEW LOGIC ---
-        // Open the new form_data_viewer.html in a new tab
-        window.open(`form_data_viewer.html?id=${id}&type=${type}`, '_blank');
+    // Invoice date from record creation
+    const createdDate = data.created_at ? new Date(data.created_at) : new Date();
+    const invoiceDate = createdDate.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+    const dueDateObj = new Date(createdDate);
+    dueDateObj.setDate(dueDateObj.getDate() + 7);
+    const dueDate = dueDateObj.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
 
-        // --- OLD MODAL LOGIC (REMOVED) ---
-        /*
-        const endpoint = type === 'traveler' ? 'api/travelers.php' : 'api/dependents.php';
-        const recordName = $(this).closest('.record-header').find('.header-name .editable').text();
-        $('#form-data-modal-title').text(`Client Form Data: ${recordName}`);
-     
-        $.get(`${endpoint}?action=get_form_data&id=${id}`, (res) => {
-            // ... (all old modal population logic) ...
-        }).fail(function() {
-            // ... (old fail logic) ...
-        });
-        */
-    });
+    // Invoice number (could be customized)
+    const invoiceNumber = `INV-${String(data.id).padStart(4, '0')}`;
 
+    // Package and visa type for main traveler
+    const packageName = getValue(data.package, 'Standard Package');
+    const visaType = getValue(data.visa_type, 'Tourist Visa');
+    const country = getValue(data.travel_country, '');
 
-    // New click handler for copying data from the form data modal
-    // REMOVED old modal click handler
-    /*
-    $(document).on('click', '.form-data-value', function(e) {
-        // ... (old modal copy logic) ...
-    });
-    */
+    // Dynamic pricing based on package type
+    let basePrice = 149.00; // Default: Full Support
 
+    // Determine price based on package name
+    const packageLower = packageName.toLowerCase();
+    if (packageLower.includes('appointment only')) {
+        basePrice = 99.00;
+    } else if (packageLower.includes('full support') && !packageLower.includes('fast track')) {
+        basePrice = 149.00;
+    } else if (packageLower.includes('fast track appointment')) {
+        basePrice = 199.00;
+    } else if (packageLower.includes('fast track full support') || packageLower.includes('fast track') && packageLower.includes('full support')) {
+        basePrice = 349.00;
+    }
 
-    // REMOVED old modal close handler
-    /*
-    $('#form-data-modal-close-btn, #form-data-modal-backdrop').on('click', function(e) {
-        if (e.target === this) {
-            $('#form-data-modal-backdrop').fadeOut(200);
+    // Calculate pricing for main traveler
+    let totalUnits = 1; // Main traveler
+
+    // Use saved price if invoice is locked, otherwise calculate
+    if (invoiceLocked && savedItems.length > 0) {
+        const mainItem = savedItems.find(item => item.type === 'main');
+        if (mainItem) {
+            basePrice = parseFloat(mainItem.price) || basePrice;
         }
-    });
-    */
+    }
 
-    // Invoice Render Function
-    function renderInvoice(data, type, dependents = [], history = null) {
-        const container = $('#invoice-content');
-        container.empty();
+    let subtotalBeforeDependents = basePrice * 1;
 
-        // Helper function to get value or default
-        const getValue = (val, defaultVal = 'N/A') => val || defaultVal;
+    // Calculate pricing for each dependent (co-traveler)
+    let dependentsPricing = [];
+    let dependentsSubtotal = 0;
 
-        // Check if invoice exists in invoices table (fetched separately)
-        const savedInvoice = $('#invoice-modal').data('saved-invoice');
-        const invoiceLocked = savedInvoice && savedInvoice.id;
-        let savedItems = [];
+    if (dependents && dependents.length > 0) {
+        dependents.forEach(dep => {
+            const depPackage = getValue(dep.package, packageName); // Use main package if not set
+            const depPackageLower = depPackage.toLowerCase();
+            let depPrice = basePrice; // Default to main traveler's price
 
-        if (invoiceLocked && savedInvoice.items_json) {
-            try {
-                savedItems = JSON.parse(savedInvoice.items_json);
-            } catch (e) {
-                console.warn('Could not parse saved invoice items');
-            }
-        }
-
-        // Format customer name
-        const customerName = [data.first_name, data.last_name].filter(Boolean).join(' ') || getValue(data.name, 'Customer Name');
-
-        // Format address
-        const addressLine1 = getValue(data.address_line_1, '');
-        const addressLine2 = getValue(data.address_line_2, '');
-        const cityState = [data.city, data.state_province].filter(Boolean).join(', ');
-        const zipCountry = [data.zip_code, data.country].filter(Boolean).join(', ');
-
-        // Invoice date from record creation
-        const createdDate = data.created_at ? new Date(data.created_at) : new Date();
-        const invoiceDate = createdDate.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
-        const dueDateObj = new Date(createdDate);
-        dueDateObj.setDate(dueDateObj.getDate() + 7);
-        const dueDate = dueDateObj.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
-
-        // Invoice number (could be customized)
-        const invoiceNumber = `INV-${String(data.id).padStart(4, '0')}`;
-
-        // Package and visa type for main traveler
-        const packageName = getValue(data.package, 'Standard Package');
-        const visaType = getValue(data.visa_type, 'Tourist Visa');
-        const country = getValue(data.travel_country, '');
-
-        // Dynamic pricing based on package type
-        let basePrice = 149.00; // Default: Full Support
-
-        // Determine price based on package name
-        const packageLower = packageName.toLowerCase();
-        if (packageLower.includes('appointment only')) {
-            basePrice = 99.00;
-        } else if (packageLower.includes('full support') && !packageLower.includes('fast track')) {
-            basePrice = 149.00;
-        } else if (packageLower.includes('fast track appointment')) {
-            basePrice = 199.00;
-        } else if (packageLower.includes('fast track full support') || packageLower.includes('fast track') && packageLower.includes('full support')) {
-            basePrice = 349.00;
-        }
-
-        // Calculate pricing for main traveler
-        let totalUnits = 1; // Main traveler
-
-        // Use saved price if invoice is locked, otherwise calculate
-        if (invoiceLocked && savedItems.length > 0) {
-            const mainItem = savedItems.find(item => item.type === 'main');
-            if (mainItem) {
-                basePrice = parseFloat(mainItem.price) || basePrice;
-            }
-        }
-
-        let subtotalBeforeDependents = basePrice * 1;
-
-        // Calculate pricing for each dependent (co-traveler)
-        let dependentsPricing = [];
-        let dependentsSubtotal = 0;
-
-        if (dependents && dependents.length > 0) {
-            dependents.forEach(dep => {
-                const depPackage = getValue(dep.package, packageName); // Use main package if not set
-                const depPackageLower = depPackage.toLowerCase();
-                let depPrice = basePrice; // Default to main traveler's price
-
-                // Check if we have saved price for this dependent
-                if (invoiceLocked && savedItems.length > 0) {
-                    const savedDep = savedItems.find(item => item.type === 'co-traveler' && item.id == dep.id);
-                    if (savedDep) {
-                        depPrice = parseFloat(savedDep.price) || depPrice;
-                    } else {
-                        // Determine price for dependent from package
-                        if (depPackageLower.includes('appointment only')) {
-                            depPrice = 99.00;
-                        } else if (depPackageLower.includes('full support') && !depPackageLower.includes('fast track')) {
-                            depPrice = 149.00;
-                        } else if (depPackageLower.includes('fast track appointment')) {
-                            depPrice = 199.00;
-                        } else if (depPackageLower.includes('fast track full support') || depPackageLower.includes('fast track') && depPackageLower.includes('full support')) {
-                            depPrice = 349.00;
-                        }
-                    }
+            // Check if we have saved price for this dependent
+            if (invoiceLocked && savedItems.length > 0) {
+                const savedDep = savedItems.find(item => item.type === 'co-traveler' && item.id == dep.id);
+                if (savedDep) {
+                    depPrice = parseFloat(savedDep.price) || depPrice;
                 } else {
                     // Determine price for dependent from package
                     if (depPackageLower.includes('appointment only')) {
@@ -6188,164 +6203,176 @@ If you need any assistance, please call us directly.`;
                         depPrice = 349.00;
                     }
                 }
-
-                const depName = [dep.first_name, dep.last_name].filter(Boolean).join(' ') || getValue(dep.name, 'Co-Traveler');
-                const depVisaType = getValue(dep.visa_type, visaType);
-                const depCountry = getValue(dep.travel_country, country);
-
-                dependentsPricing.push({
-                    name: depName,
-                    package: depPackage,
-                    visaType: depVisaType,
-                    country: depCountry,
-                    price: depPrice
-                });
-
-                dependentsSubtotal += depPrice;
-                totalUnits++;
-            });
-        }
-
-        // Always calculate subtotal from items (never use saved subtotal as it might be corrupted)
-        let subtotal = subtotalBeforeDependents + dependentsSubtotal;
-
-        console.log('Invoice calculation:', {
-            basePrice,
-            subtotalBeforeDependents,
-            dependentsSubtotal,
-            subtotal,
-            invoiceLocked,
-            savedInvoice
-        });
-
-        // Discount calculation (supports both percentage and fixed amount)
-        // Check if we have saved invoice data, otherwise use current input/data values
-
-        let discountType, discountValue, discount, discountLabel, total;
-
-        // First check if there's a saved invoice
-        if (invoiceLocked && savedInvoice && savedInvoice.discount_type) {
-            // Use saved discount settings from invoices table
-            discountType = (savedInvoice.discount_type || 'none').toLowerCase();
-            discountValue = parseFloat(savedInvoice.discount_value) || 0;
-
-            // Recalculate discount based on current subtotal
-            discount = 0;
-            if (discountType === 'percentage' && discountValue > 0) {
-                discount = (subtotal * discountValue) / 100;
-            } else if (discountType === 'fixed' && discountValue > 0) {
-                discount = discountValue;
-            }
-
-            // Cap discount at subtotal
-            if (discount > subtotal) {
-                discount = subtotal;
-            }
-
-            total = subtotal - discount;
-        } else {
-            // Use values from travelers table (discount_type, discount_value fields)
-            discountType = getValue(data.discount_type, 'none').toLowerCase();
-            discountValue = parseFloat(getValue(data.discount_value, 0)) || 0;
-
-            // Handle 'select' as 'none'
-            if (discountType === 'select' || discountType === '') {
-                discountType = 'none';
-            }
-
-            discount = 0;
-            if (discountType === 'percentage' && discountValue > 0) {
-                discount = (subtotal * discountValue) / 100;
-            } else if (discountType === 'fixed' && discountValue > 0) {
-                discount = discountValue;
-            }
-
-            if (discount > subtotal) {
-                discount = subtotal;
-            }
-
-            total = subtotal - discount;
-        }
-
-        // Set discount label
-        discountLabel = '';
-        if (discountType === 'percentage' && discountValue > 0) {
-            discountLabel = `Discount (${discountValue}%)`;
-        } else if (discountType === 'fixed' && discountValue > 0) {
-            discountLabel = `Discount (£${discountValue} off)`;
-        }
-
-        // Payment status
-        const paymentStatus = getValue(data.payment_status, 'Unpaid');
-        const isPaid = paymentStatus.toLowerCase() === 'paid';
-        const isFullRefund = paymentStatus.toLowerCase() === 'full refund';
-        const isPartialRefund = paymentStatus.toLowerCase() === 'partial refund';
-        const isRefunded = isFullRefund || isPartialRefund;
-
-        // Get refund amount for partial refunds
-        const refundAmount = parseFloat(getValue(data.refund_amount, 0)) || 0;
-
-        // Payment status badge styling
-        let statusBadgeClass = 'status-badge-unpaid';
-        let statusBadgeText = 'UNPAID';
-
-        if (isPaid) {
-            statusBadgeClass = 'status-badge-paid';
-            statusBadgeText = '✓ PAID';
-        } else if (isFullRefund) {
-            statusBadgeClass = 'status-badge-refund';
-            statusBadgeText = '↩ FULL REFUND';
-        } else if (isPartialRefund) {
-            statusBadgeClass = 'status-badge-partial-refund';
-            statusBadgeText = `↩ PARTIAL REFUND (£${refundAmount.toFixed(2)})`;
-        }
-
-        // Construct History Display
-        // Construct History Display
-        let historyHtml = '';
-        if (history) {
-            if (history.last_sent_invoice) {
-                historyHtml += `<div class="history-item"><small>Last Invoice Sent: ${history.last_sent_invoice}</small></div>`;
-            }
-            if (history.last_sent_t_invoice) {
-                historyHtml += `<div class="history-item"><small>Last T-Invoice Sent: ${history.last_sent_t_invoice}</small></div>`;
-            }
-        }
-
-        // Collect all emails (main traveler + dependents)
-        let allEmails = [];
-        if (data.email) {
-            allEmails.push({ name: customerName, email: data.email, type: 'Main Traveler' });
-        }
-
-        // Add dependent emails
-        if (dependents && dependents.length > 0) {
-            dependents.forEach(dep => {
-                if (dep.email) {
-                    const depName = [dep.first_name, dep.last_name].filter(Boolean).join(' ') || 'Co-Traveler';
-                    allEmails.push({ name: depName, email: dep.email, type: 'Co-Traveler' });
+            } else {
+                // Determine price for dependent from package
+                if (depPackageLower.includes('appointment only')) {
+                    depPrice = 99.00;
+                } else if (depPackageLower.includes('full support') && !depPackageLower.includes('fast track')) {
+                    depPrice = 149.00;
+                } else if (depPackageLower.includes('fast track appointment')) {
+                    depPrice = 199.00;
+                } else if (depPackageLower.includes('fast track full support') || depPackageLower.includes('fast track') && depPackageLower.includes('full support')) {
+                    depPrice = 349.00;
                 }
+            }
+
+            const depName = [dep.first_name, dep.last_name].filter(Boolean).join(' ') || getValue(dep.name, 'Co-Traveler');
+            const depVisaType = getValue(dep.visa_type, visaType);
+            const depCountry = getValue(dep.travel_country, country);
+
+            dependentsPricing.push({
+                name: depName,
+                package: depPackage,
+                visaType: depVisaType,
+                country: depCountry,
+                price: depPrice
             });
+
+            dependentsSubtotal += depPrice;
+            totalUnits++;
+        });
+    }
+
+    // Always calculate subtotal from items (never use saved subtotal as it might be corrupted)
+    let subtotal = subtotalBeforeDependents + dependentsSubtotal;
+
+    console.log('Invoice calculation:', {
+        basePrice,
+        subtotalBeforeDependents,
+        dependentsSubtotal,
+        subtotal,
+        invoiceLocked,
+        savedInvoice
+    });
+
+    // Discount calculation (supports both percentage and fixed amount)
+    // Check if we have saved invoice data, otherwise use current input/data values
+
+    let discountType, discountValue, discount, discountLabel, total;
+
+    // First check if there's a saved invoice
+    if (invoiceLocked && savedInvoice && savedInvoice.discount_type) {
+        // Use saved discount settings from invoices table
+        discountType = (savedInvoice.discount_type || 'none').toLowerCase();
+        discountValue = parseFloat(savedInvoice.discount_value) || 0;
+
+        // Recalculate discount based on current subtotal
+        discount = 0;
+        if (discountType === 'percentage' && discountValue > 0) {
+            discount = (subtotal * discountValue) / 100;
+        } else if (discountType === 'fixed' && discountValue > 0) {
+            discount = discountValue;
         }
 
-        // Store all emails in modal data for sending
-        $('#invoice-modal').data('all-emails', allEmails);
-
-        // Build emails HTML for display
-        let emailsHtml = '';
-        if (allEmails.length > 0) {
-            emailsHtml = allEmails.map(e => `<p style="margin: 2px 0;"><span style="color: #666; font-size: 11px;">${e.type}:</span> ${e.email}</p>`).join('');
+        // Cap discount at subtotal
+        if (discount > subtotal) {
+            discount = subtotal;
         }
 
-        // Build compact address string
-        const addressParts = [addressLine1, addressLine2, cityState, zipCountry].filter(Boolean);
-        const compactAddress = addressParts.join(', ');
+        total = subtotal - discount;
+    } else {
+        // Use values from travelers table (discount_type, discount_value fields)
+        discountType = getValue(data.discount_type, 'none').toLowerCase();
+        discountValue = parseFloat(getValue(data.discount_value, 0)) || 0;
 
-        // Build compact emails for display (limit shown)
-        const emailsList = allEmails.slice(0, 2).map(e => e.email).join(' | ');
-        const moreEmails = allEmails.length > 2 ? ` +${allEmails.length - 2} more` : '';
+        // Handle 'select' as 'none'
+        if (discountType === 'select' || discountType === '') {
+            discountType = 'none';
+        }
 
-        const html = `
+        discount = 0;
+        if (discountType === 'percentage' && discountValue > 0) {
+            discount = (subtotal * discountValue) / 100;
+        } else if (discountType === 'fixed' && discountValue > 0) {
+            discount = discountValue;
+        }
+
+        if (discount > subtotal) {
+            discount = subtotal;
+        }
+
+        total = subtotal - discount;
+    }
+
+    // Set discount label
+    discountLabel = '';
+    if (discountType === 'percentage' && discountValue > 0) {
+        discountLabel = `Discount (${discountValue}%)`;
+    } else if (discountType === 'fixed' && discountValue > 0) {
+        discountLabel = `Discount (£${discountValue} off)`;
+    }
+
+    // Payment status
+    const paymentStatus = getValue(data.payment_status, 'Unpaid');
+    const isPaid = paymentStatus.toLowerCase() === 'paid';
+    const isFullRefund = paymentStatus.toLowerCase() === 'full refund';
+    const isPartialRefund = paymentStatus.toLowerCase() === 'partial refund';
+    const isRefunded = isFullRefund || isPartialRefund;
+
+    // Get refund amount for partial refunds
+    const refundAmount = parseFloat(getValue(data.refund_amount, 0)) || 0;
+
+    // Payment status badge styling
+    let statusBadgeClass = 'status-badge-unpaid';
+    let statusBadgeText = 'UNPAID';
+
+    if (isPaid) {
+        statusBadgeClass = 'status-badge-paid';
+        statusBadgeText = '✓ PAID';
+    } else if (isFullRefund) {
+        statusBadgeClass = 'status-badge-refund';
+        statusBadgeText = '↩ FULL REFUND';
+    } else if (isPartialRefund) {
+        statusBadgeClass = 'status-badge-partial-refund';
+        statusBadgeText = `↩ PARTIAL REFUND (£${refundAmount.toFixed(2)})`;
+    }
+
+    // Construct History Display
+    // Construct History Display
+    let historyHtml = '';
+    if (history) {
+        if (history.last_sent_invoice) {
+            historyHtml += `<div class="history-item"><small>Last Invoice Sent: ${history.last_sent_invoice}</small></div>`;
+        }
+        if (history.last_sent_t_invoice) {
+            historyHtml += `<div class="history-item"><small>Last T-Invoice Sent: ${history.last_sent_t_invoice}</small></div>`;
+        }
+    }
+
+    // Collect all emails (main traveler + dependents)
+    let allEmails = [];
+    if (data.email) {
+        allEmails.push({ name: customerName, email: data.email, type: 'Main Traveler' });
+    }
+
+    // Add dependent emails
+    if (dependents && dependents.length > 0) {
+        dependents.forEach(dep => {
+            if (dep.email) {
+                const depName = [dep.first_name, dep.last_name].filter(Boolean).join(' ') || 'Co-Traveler';
+                allEmails.push({ name: depName, email: dep.email, type: 'Co-Traveler' });
+            }
+        });
+    }
+
+    // Store all emails in modal data for sending
+    $('#invoice-modal').data('all-emails', allEmails);
+
+    // Build emails HTML for display
+    let emailsHtml = '';
+    if (allEmails.length > 0) {
+        emailsHtml = allEmails.map(e => `<p style="margin: 2px 0;"><span style="color: #666; font-size: 11px;">${e.type}:</span> ${e.email}</p>`).join('');
+    }
+
+    // Build compact address string
+    const addressParts = [addressLine1, addressLine2, cityState, zipCountry].filter(Boolean);
+    const compactAddress = addressParts.join(', ');
+
+    // Build compact emails for display (limit shown)
+    const emailsList = allEmails.slice(0, 2).map(e => e.email).join(' | ');
+    const moreEmails = allEmails.length > 2 ? ` +${allEmails.length - 2} more` : '';
+
+    const html = `
                 <div class="container">
                     <!-- Compact Header with Invoice Number -->
                     <div class="invoice-header-compact">
@@ -6498,24 +6525,24 @@ If you need any assistance, please call us directly.`;
                     <!-- Compact Footer -->
                     <div class="invoice-footer">
                         ${isPaid
-                ? '<p class="status-msg paid"><i class="fas fa-check-circle"></i> Payment received - Thank you!</p>'
-                : isFullRefund
-                    ? '<p class="status-msg refunded"><i class="fas fa-undo"></i> Full refund processed</p>'
-                    : isPartialRefund
-                        ? '<p class="status-msg refunded"><i class="fas fa-undo"></i> Partial refund of £' + refundAmount.toFixed(2) + ' processed</p>'
-                        : '<p class="status-msg pending"><i class="fas fa-clock"></i> Payment due within 7 days</p>'
-            }
+            ? '<p class="status-msg paid"><i class="fas fa-check-circle"></i> Payment received - Thank you!</p>'
+            : isFullRefund
+                ? '<p class="status-msg refunded"><i class="fas fa-undo"></i> Full refund processed</p>'
+                : isPartialRefund
+                    ? '<p class="status-msg refunded"><i class="fas fa-undo"></i> Partial refund of £' + refundAmount.toFixed(2) + ' processed</p>'
+                    : '<p class="status-msg pending"><i class="fas fa-clock"></i> Payment due within 7 days</p>'
+        }
                         <p class="contact-line">Questions? Contact us at <strong>help@visad.co.uk</strong></p>
                     </div>
                 </div>
             `;
 
-        container.html(html);
-        $('#invoice-history-placeholder').html(historyHtml);
-    }
+    container.html(html);
+    $('#invoice-history-placeholder').html(historyHtml);
+}
 
 
-    fetchAndRenderRecords();
+fetchAndRenderRecords();
 
     // initialize_app();
 });

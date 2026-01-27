@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Invoice - VisaD</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #2563eb;
+            --secondary-color: #1e40af;
+            --text-color: #1f2937;
+            --light-text: #6b7280;
+            --border-color: #e5e7eb;
+            --background: #f3f4f6;
+            --card-bg: #ffffff;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--background);
+            color: var(--text-color);
+            line-height: 1.5;
+            margin: 0;
+            padding: 40px 20px;
+        }
+
+        .invoice-container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: var(--card-bg);
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            padding: 48px;
+            position: relative;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 48px;
+        }
+
+        .logo-area h1 {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--primary-color);
+            margin: 0;
+            letter-spacing: -0.5px;
+        }
+
+        .logo-area p {
+            font-size: 14px;
+            color: var(--light-text);
+            margin: 4px 0 0;
+        }
+
+        .invoice-details {
+            text-align: right;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            background: #dbeafe;
+            color: #1e40af;
+            margin-bottom: 12px;
+        }
+
+        .status-badge.paid {
+            background: #d1fae5;
+            color: #065f46;
+        }
+
+        .invoice-title {
+            font-size: 32px;
+            font-weight: 700;
+            color: var(--text-color);
+            margin: 0 0 4px;
+        }
+
+        .invoice-number {
+            font-size: 16px;
+            color: var(--light-text);
+        }
+
+        .billing-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 40px;
+            margin-bottom: 48px;
+            padding-bottom: 32px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .bill-to h3, .bill-from h3 {
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--light-text);
+            font-weight: 600;
+            margin-bottom: 16px;
+        }
+
+        .client-name {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .address-line {
+            color: var(--light-text);
+            font-size: 14px;
+            margin-bottom: 4px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 32px;
+        }
+
+        th {
+            text-align: left;
+            padding: 12px 16px;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--light-text);
+            font-weight: 600;
+            border-bottom: 2px solid var(--border-color);
+        }
+
+        td {
+            padding: 16px;
+            border-bottom: 1px solid var(--border-color);
+            font-size: 14px;
+        }
+
+        .amount-col {
+            text-align: right;
+            font-weight: 500;
+        }
+
+        .totals-area {
+            display: flex;
+            justify-content: flex-end;
+            margin-bottom: 48px;
+        }
+
+        .totals-table {
+            width: 300px;
+            margin: 0;
+        }
+
+        .totals-table td {
+            border: none;
+            padding: 8px 16px;
+        }
+
+        .totals-table .label {
+            color: var(--light-text);
+            text-align: right;
+        }
+
+        .totals-table .value {
+            text-align: right;
+            font-weight: 600;
+        }
+
+        .grand-total {
+            font-size: 18px;
+            color: var(--primary-color);
+            border-top: 2px solid var(--border-color) !important;
+            padding-top: 16px !important;
+            margin-top: 8px;
+        }
+
+        .footer {
+            text-align: center;
+            font-size: 12px;
+            color: var(--light-text);
+            margin-top: 64px;
+        }
+
+        .actions {
+            position: fixed;
+            bottom: 32px;
+            right: 32px;
+            display: flex;
+            gap: 12px;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border-radius: 8px;
+            border: none;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.2s;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        .btn-primary {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: var(--secondary-color);
+            transform: translateY(-1px);
+        }
+
+        .btn-secondary {
+            background: white;
+            color: var(--text-color);
+            border: 1px solid var(--border-color);
+        }
+
+        .btn-secondary:hover {
+            background: #f9fafb;
+        }
+
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(255,255,255,0.9);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            font-weight: 600;
+            color: var(--primary-color);
+        }
+
+        .error-message {
+            text-align: center;
+            color: #ef4444;
+            padding: 40px;
+        }
+
+        @media print {
+            body { 
+                background: white; 
+                padding: 0;
+            }
+            .invoice-container { 
+                box-shadow: none; 
+                padding: 0; 
+                max-width: 100%;
+            }
+            .actions, .loading-overlay { display: none; }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="loader" class="loading-overlay">
+        <i class="fas fa-circle-notch fa-spin fa-2x"></i> &nbsp; Loading invoice...
+    </div>
+
+    <div id="app" style="display: none;">
+        <div class="invoice-container">
+            <div class="header">
+                <div class="logo-area">
+                    <h1>VisaD</h1>
+                    <p>Professional Visa Services</p>
+                </div>
+                <div class="invoice-details">
+                    <span id="status-badge" class="status-badge">Unpaid</span>
+                    <h2 class="invoice-title">INVOICE</h2>
+                    <div class="invoice-number" id="invoice-number">#Loading...</div>
+                    <div style="margin-top: 8px; font-size: 14px; color: #6b7280;">
+                        Date: <span id="invoice-date">...</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="billing-grid">
+                <div class="bill-from">
+                    <h3>Bill From</h3>
+                    <div class="client-name">VisaD Group</div>
+                    <div class="address-line">London, United Kingdom</div>
+                    <div class="address-line">doc@visad.co.uk</div>
+                </div>
+                <div class="bill-to">
+                    <h3>Bill To</h3>
+                    <div class="client-name" id="customer-name">...</div>
+                    <div class="address-line" id="customer-address">...</div>
+                    <div class="address-line" id="customer-email">...</div>
+                </div>
+            </div>
+
+            <div class="items-section">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Description</th>
+                            <th class="amount-col">Amount</th>
+                        </tr>
+                    </thead>
+                    <tbody id="items-body">
+                        <!-- Items rendered here -->
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="totals-area">
+                <table class="totals-table">
+                    <tr>
+                        <td class="label">Subtotal</td>
+                        <td class="value" id="subtotal">£0.00</td>
+                    </tr>
+                    <tr id="discount-row" style="display:none;">
+                        <td class="label" style="color: #059669;">Discount</td>
+                        <td class="value" style="color: #059669;" id="discount">-£0.00</td>
+                    </tr>
+                    <tr>
+                        <td class="label grand-total">Total</td>
+                        <td class="value grand-total" id="total">£0.00</td>
+                    </tr>
+                </table>
+            </div>
+
+            <div class="footer">
+                <p>Thank you for choosing VisaD. Please proceed with the payment to complete your application.</p>
+                <p style="margin-top: 8px;">&copy; 2024 VisaD Group. All rights reserved.</p>
+            </div>
+        </div>
+
+        <div class="actions">
+            <button class="btn btn-secondary" onclick="window.close()">Close</button>
+            <button class="btn btn-primary" onclick="window.print()"><i class="fas fa-print"></i> Print Invoice</button>
+        </div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+        $(document).ready(function() {
+            // Get params
+            const urlParams = new URLSearchParams(window.location.search);
+            const id = urlParams.get('id');
+            const type = urlParams.get('type') || 'traveler';
+
+            if (!id) {
+                showError('Invoice ID is missing.');
+                return;
+            }
+
+            // Fetch invoice data
+            $.ajax({
+                url: `/api/invoices/${type}/${id}`,
+                method: 'GET',
+                success: function(response) {
+                    if (response.status === 'success' && response.data) {
+                        renderInvoice(response.data);
+                    } else {
+                        showError('Failed to load invoice data.');
+                    }
+                },
+                error: function(xhr) {
+                    showError('Error loading invoice: ' + xhr.statusText);
+                }
+            });
+
+            function renderInvoice(data) {
+                // Customer Info
+                $('#customer-name').text(data.customer.name);
+                $('#customer-email').text(data.customer.email);
+                
+                const addr = [
+                    data.customer.addressLine1, 
+                    data.customer.city, 
+                    data.customer.country
+                ].filter(Boolean).join(', ');
+                $('#customer-address').text(addr);
+
+                // Invoice Info
+                $('#invoice-number').text(data.invoiceNumber || `INV-${String(id).padStart(5, '0')}`);
+                $('#invoice-date').text(new Date().toLocaleDateString('en-GB'));
+                
+                // Status (Mock logic or from data if available)
+                const isPaid = data.totals.total === "0.00"; // Simple logic, or pass status from backend
+                // Actually payment status is in Traveler but maybe not exposed in plain DTO yet?
+                // For now default to Unpaid unless 0
+                if (isPaid) {
+                    $('#status-badge').text('Paid').addClass('paid');
+                }
+
+                // Items
+                const tbody = $('#items-body');
+                tbody.empty();
+                
+                if (data.items && data.items.length > 0) {
+                    data.items.forEach(item => {
+                        const row = `
+                            <tr>
+                                <td>
+                                    <div style="font-weight: 500;">${item.description || item.name}</div>
+                                    <div style="font-size: 12px; color: #6b7280; margin-top: 4px;">
+                                        ${item.details || ''}
+                                    </div>
+                                </td>
+                                <td class="amount-col">£${item.amount}</td>
+                            </tr>
+                        `;
+                        tbody.append(row);
+                    });
+                }
+
+                // Totals
+                $('#subtotal').text(`£${data.totals.subtotal}`);
+                
+                if (parseFloat(data.totals.discountAmount) > 0) {
+                    $('#discount-row').show();
+                    $('#discount').text(`-£${data.totals.discountAmount}`);
+                }
+
+                $('#total').text(`£${data.totals.total}`);
+
+                // Show
+                $('#loader').fadeOut(200);
+                $('#app').fadeIn(200);
+            }
+
+            function showError(msg) {
+                $('#loader').hide();
+                $('body').append(`<div class="error-message"><h3>${msg}</h3></div>`);
+            }
+        });
+    </script>
+</body>
+</html>
