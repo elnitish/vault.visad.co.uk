@@ -144,19 +144,13 @@ $(document).ready(function () {
     const endpoint = recordType === 'traveler' ? `/api/travelers/${recordId}` : `/api/dependents/${recordId}`;
     const requestUrl = endpoint;
 
-    console.log('🔵 ========== FORM DATA VIEWER API REQUEST ==========');
-    console.log('📍 Backend: Spring Boot (Java) on localhost:8080');
-    console.log('🔗 Full URL:', requestUrl);
-    console.log('📋 Record ID:', recordId);
-    console.log('📋 Record Type:', recordType);
-    console.log('⏰ Request Time:', new Date().toLocaleTimeString());
+    console.log(`API REQUEST: GET ${requestUrl} (No Payload)`);
+    const apiStartTime = performance.now();
 
     $.get(requestUrl, res => {
-        console.log('✅ ========== API RESPONSE RECEIVED ==========');
-        console.log('📦 Full Response:', res);
-        console.log('📊 Response Status:', res.status);
-        console.log('📊 Response Data:', res.data);
-        console.log('⏰ Response Time:', new Date().toLocaleTimeString());
+        const apiEndTime = performance.now();
+        console.log(`API RESPONSE TIME: ${(apiEndTime - apiStartTime).toFixed(2)}ms`);
+        console.log(`API SUCCESS: GET ${requestUrl}`, res);
 
         if (res.status === 'success' && res.data) {
             // Helper to map camelCase (Spring Boot backend) to snake_case (frontend)
@@ -211,18 +205,7 @@ $(document).ready(function () {
             console.log('📋 Converted Data (snake_case):', flatData);
             console.log('📋 Flat Data Keys:', Object.keys(flatData));
 
-            // 🔍 DEBUG: Check address fields specifically
-            console.log('🏠 ========== ADDRESS FIELDS DEBUG ==========');
-            console.log('📍 Original (camelCase) - addressLine1:', res.data.addressLine1);
-            console.log('📍 Original (camelCase) - addressLine2:', res.data.addressLine2);
-            console.log('📍 Converted (snake_case) - address_line_1:', flatData.address_line_1);
-            console.log('📍 Converted (snake_case) - address_line_2:', flatData.address_line_2);
-            console.log('📍 Type of address_line_1:', typeof flatData.address_line_1);
-            console.log('📍 Type of address_line_2:', typeof flatData.address_line_2);
-            console.log('📍 Is address_line_1 null?', flatData.address_line_1 === null);
-            console.log('📍 Is address_line_1 undefined?', flatData.address_line_1 === undefined);
-            console.log('📍 Is address_line_1 empty string?', flatData.address_line_1 === '');
-            console.log('🏠 ==========================================');
+
 
             // 3. Normalize flat data into the { personal, questions } structure
             personalFieldKeys.forEach(key => {
@@ -255,7 +238,10 @@ $(document).ready(function () {
 
             // Preload documents before rendering summary
             preloadDocumentFields().then(() => {
+                const renderStartTime = performance.now();
                 renderSummaryView();
+                const renderEndTime = performance.now();
+                console.log(`UI RENDER TIME: ${(renderEndTime - renderStartTime).toFixed(2)}ms`);
                 recordData.applicationFormData = collectUserInformationFromFields();
                 setupGenerateApplicationFormButton();
                 setupLockUnlockButton();

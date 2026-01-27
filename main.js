@@ -3969,8 +3969,8 @@ If you need any assistance, please call us directly.`;
     // Helper function to fetch dependents and render invoice
     function fetchDependentsAndRender(mainTravelerData, travelerId) {
         // Fetch dependents from the dependents table
-        // Spring Boot: GET /dependents?travelerId=...
-        apiRequest(`/dependents?travelerId=${travelerId}`, 'GET', null, function (depRes) {
+        // Spring Boot: GET /dependents?traveler_id=...
+        apiRequest(`/dependents?traveler_id=${travelerId}`, 'GET', null, function (depRes) {
             let dependents = [];
 
             if (depRes.status === 'success' && depRes.data) {
@@ -3982,10 +3982,6 @@ If you need any assistance, please call us directly.`;
                 }
                 console.log('Invoice - Dependents found from dependents table:', dependents.length);
             } else {
-                // If API fails or returns no data in expected format, try to infer from Travelers table?
-                // Probably not needed if Spring Boot is consistent.
-                // But let's keep the fallback logic for robustness if we want, OR just rely on this.
-                // I'll assume Spring Boot Dependents API is the source of truth.
                 console.log('Invoice - No dependents found or error');
             }
 
@@ -4005,14 +4001,15 @@ If you need any assistance, please call us directly.`;
         $('#invoice-modal').data('record-type', 'traveler');
         $('#invoice-modal').data('dependents', dependents);
 
-        // Fetch saved invoice from invoices table first
-        $.get('api/travelers.php?action=get_invoice&traveler_id=' + mainTravelerData.id, function (invRes) {
+        // Fetch invoice data from Spring Boot
+        apiRequest(`/invoices/traveler/${mainTravelerData.id}`, 'GET', null, function (invRes) {
             let savedInvoice = null;
             if (invRes.status === 'success' && invRes.data) {
-                savedInvoice = invRes.data;
-                console.log('Invoice - Saved invoice found:', savedInvoice.invoice_number);
+                // Map Spring DTO to what renderInvoice expects (snake_case likely)
+                savedInvoice = mapToSnakeCase(invRes.data);
+                console.log('Invoice - Data fetched from Spring:', savedInvoice);
             } else {
-                console.log('Invoice - No saved invoice, will calculate');
+                console.log('Invoice - No data from Spring, will calculate');
             }
 
             // Store saved invoice data
@@ -4023,8 +4020,8 @@ If you need any assistance, please call us directly.`;
                 renderInvoice(mainTravelerData, 'traveler', dependents, history);
                 $('#invoice-modal-backdrop').fadeIn(200);
             });
-        }).fail(function () {
-            // No saved invoice, render with calculated values
+        }, function () {
+            // Error fallback
             $('#invoice-modal').data('saved-invoice', null);
             fetchInvoiceHistory(mainTravelerData.id, 'traveler', function (history) {
                 renderInvoice(mainTravelerData, 'traveler', dependents, history);
@@ -4035,17 +4032,15 @@ If you need any assistance, please call us directly.`;
 
     // Implementation of fetchInvoiceHistory in main.js
     function fetchInvoiceHistory(recordId, recordType, callback) {
-        $.get('api/invoices.php', {
-            action: 'get_history',
-            id: recordId,
-            type: recordType
-        }, function (res) {
+        // Use Spring Boot endpoint: /invoices/get_history?traveler_id=...
+        // Note: currently supports traveler only based on controller
+        apiRequest('/invoices/get_history?traveler_id=' + recordId, 'GET', null, function (res) {
             if (res.status === 'success') {
                 callback(res.data);
             } else {
                 callback(null);
             }
-        }, 'json').fail(function () {
+        }, function () {
             callback(null);
         });
     }
