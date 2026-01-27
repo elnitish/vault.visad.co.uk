@@ -4850,6 +4850,7 @@ If you need any assistance, please call us directly.`;
             record_type: recordType,
             emails: emailList,
             invoice_number: invoiceNumber,
+            subject: `Invoice ${invoiceNumber} - VISAD.CO.UK`,
             customer_name: customerName,
             customer_email: recordData.email || emailList[0],
             customer_address: addressParts.join(', '),
