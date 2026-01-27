@@ -986,54 +986,8 @@ $(document).ready(function () {
         if (body.is(':empty')) {
             let travelerData = allLoadedRecords.find(t => t.id == mainTravelerId);
 
-            // OPTIMIZATION: Check if we have full data. If "notes" is missing/undefined, it's likely a summary.
-            // We need to fetch the full record.
-            if (travelerData && travelerData.notes === undefined) {
-                // Show loading indicator in body (optional, but good UX)
-                body.html('<div class="text-center p-4"><i class="fas fa-spinner fa-spin"></i> Loading details...</div>').show();
-
-                // Fetch full data synchronously-ish (async but we handle UI)
-                const endpoint = `/travelers/${mainTravelerId}`; // Get full data
-
-                // We utilize the global apiRequest but we need to handle the flow
-                // Since this is a click handler, we can fire the request
-                apiRequest(endpoint, 'GET', null, function (res) {
-                    if (res.status === 'success' && res.data) {
-                        // Update the local cache so we don't fetch again
-                        const fullData = res.data;
-
-                        // Merge full data into allLoadedRecords array
-                        const index = allLoadedRecords.findIndex(t => t.id == mainTravelerId);
-                        if (index !== -1) {
-                            allLoadedRecords[index] = fullData;
-                        }
-
-                        // Update our local reference
-                        travelerData = fullData;
-
-                        // Now render
-                        if (wrapper.hasClass('traveler-container')) {
-                            body.html(createRecordBodyHtml(travelerData, 'travelers'));
-                        } else {
-                            // It's a dependent
-                            const depId = wrapper.data('id');
-                            const depData = (travelerData.dependents || []).find(d => d.id == depId);
-                            if (depData) {
-                                body.html(createRecordBodyHtml(depData, 'dependents'));
-                            }
-                        }
-                    } else {
-                        body.html('<div class="text-danger p-4">Failed to load details.</div>');
-                    }
-                }, function () {
-                    body.html('<div class="text-danger p-4">Error loading details.</div>');
-                });
-
-                // Return efficiently?
-                // The expand toggle logic below runs immediately. 
-                // We should probably let it expand, showing the spinner.
-            } else if (travelerData) {
-                // We already have full data
+            if (travelerData) {
+                // We already have full data (loaded upfront)
                 if (wrapper.hasClass('traveler-container')) {
                     body.html(createRecordBodyHtml(travelerData, 'travelers'));
                 } else {
@@ -1045,7 +999,9 @@ $(document).ready(function () {
                     }
                 }
             }
+
         }
+
 
         $('.record-container').not(wrapper).removeClass('expanded').find('> .record-body').slideUp();
 

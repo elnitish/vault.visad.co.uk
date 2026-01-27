@@ -882,7 +882,7 @@ $(document).ready(function () {
         });
 
         // 3. Questions Grid
-        const qData = recordData.questions || {};
+        const qData = recordData.questions || recordData || {};
         const pData = recordData.personal || {};
         const questionsGrid = $('#summary-questions-grid');
         questionsGrid.empty();
@@ -1467,7 +1467,7 @@ $(document).ready(function () {
     function checkClientDocumentStatus() {
         const clientDocFields = ['evisa_document_path', 'share_code_document_path', 'schengen_visa_image', 'booking_documents_path'];
         let hasClientDocs = false;
-        const qData = recordData.questions || {};
+        const qData = recordData.questions || recordData || {};
 
         for (const field of clientDocFields) {
             let files = qData[field];
@@ -1526,7 +1526,8 @@ $(document).ready(function () {
             showClientDocumentsView();
         } else if (action === 'covering-letter') {
             // Navigate to covering letter page
-            window.location.href = `covering_letter_schengen.html?id=${recordId}&type=${recordType}`;
+            // Navigate to covering letter page in new tab
+            window.open(`covering_letter_schengen.html?id=${recordId}&type=${recordType}`, '_blank');
         } else if (action === 'insurance' || action === 'flight' ||
             action === 'application-form' || action === 'appointment' ||
             action === 'hotel') {
@@ -1845,7 +1846,7 @@ $(document).ready(function () {
                     }
 
                     // Additionally, check recordData.questions for client-uploaded files
-                    const qData = recordData.questions || {};
+                    const qData = recordData.questions || recordData || {};
                     const clientFiles = getClientUploadedFilesByCategory(category, qData);
 
                     // Merge both sources
@@ -1854,7 +1855,7 @@ $(document).ready(function () {
                     resolve(files);
                 }, 'json').fail(() => {
                     // Even if API fails, try to get client-uploaded files from form data
-                    const qData = recordData.questions || {};
+                    const qData = recordData.questions || recordData || {};
                     const clientFiles = getClientUploadedFilesByCategory(category, qData);
                     resolve(clientFiles);
                 });
@@ -1907,8 +1908,19 @@ $(document).ready(function () {
                 console.log(`[File Path Debug] Parsed paths:`, filePaths);
 
                 // Add each file
-                filePaths.forEach(filePath => {
-                    if (filePath && typeof filePath === 'string' && filePath.trim() !== '') {
+                filePaths.forEach((item, index) => {
+                    let filePath = item;
+
+                    // Handle nested arrays (e.g. if JSON parse returned [["path"]])
+                    if (Array.isArray(filePath) && filePath.length > 0) {
+                        console.log(`[File Path Debug] Item ${index} is array, unwrapping:`, filePath);
+                        filePath = filePath[0];
+                    }
+
+                    if (filePath && typeof filePath === 'object' && filePath.url) {
+                        console.log(`[File Path Debug] Item ${index} is already object:`, filePath);
+                        files.push(filePath);
+                    } else if (filePath && typeof filePath === 'string' && filePath.trim() !== '') {
                         // Extract filename from path
                         const fileName = filePath.split('/').pop();
 
@@ -1918,7 +1930,7 @@ $(document).ready(function () {
                         // If it's already a full URL, use it as is
                         if (fileUrl.startsWith('http://') || fileUrl.startsWith('https://')) {
                             // Full URL, use as is
-                            console.log(`[File Path Debug] Full URL detected: "${fileUrl}"`);
+                            // console.log(`[File Path Debug] Full URL detected: "${fileUrl}"`);
                         } else {
                             // Remove leading slash if present
                             fileUrl = fileUrl.replace(/^\//, '');
@@ -1927,7 +1939,7 @@ $(document).ready(function () {
                             // Client-uploaded files are stored in uploads/documents/client_documents/
                             fileUrl = `uploads/documents/client_documents/${fileUrl}`;
 
-                            console.log(`[File Path Debug] Constructed path: "${filePath}" -> "${fileUrl}"`);
+                            // console.log(`[File Path Debug] Constructed path: "${filePath}" -> "${fileUrl}"`);
                         }
 
                         files.push({
@@ -1937,6 +1949,8 @@ $(document).ready(function () {
                             file_size: null,
                             source: 'client_form' // Mark as coming from client form
                         });
+                    } else {
+                        console.warn(`[File Path Debug] Item ${index} skipped. Value:`, filePath, 'Type:', typeof filePath);
                     }
                 });
             }
@@ -2623,7 +2637,7 @@ $(document).ready(function () {
 
     // Function to load and check checklist items
     async function loadChecklistData() {
-        const qData = recordData.questions || {};
+        const qData = recordData.questions || recordData || {};
         const occupationStatus = qData.occupation_status || '';
         const fingerprintsTaken = qData.fingerprints_taken || '';
         const hasCreditCard = qData.has_credit_card || '';
@@ -2992,7 +3006,7 @@ $(document).ready(function () {
         // 2. Admin-uploaded files (Documents section - evisa category)
 
         return new Promise((resolve) => {
-            const qData = recordData.questions || {};
+            const qData = recordData.questions || recordData || {};
             let allFiles = [];
 
             // Helper to safe-get property from flat recordData or nested questions
@@ -3081,7 +3095,7 @@ $(document).ready(function () {
         // 2. Admin-uploaded files (Documents section - share_code category)
 
         return new Promise((resolve) => {
-            const qData = recordData.questions || {};
+            const qData = recordData.questions || recordData || {};
             let allFiles = [];
 
             // Helper to safe-get property from flat recordData or nested questions
@@ -3162,7 +3176,7 @@ $(document).ready(function () {
     }
 
     function checkPassport() {
-        const qData = recordData.questions || {};
+        const qData = recordData.questions || recordData || {};
         const pData = recordData.personal || {};
 
         if (pData.passport_number && pData.passport_expiry) {
@@ -3172,7 +3186,7 @@ $(document).ready(function () {
     }
 
     function checkEvisa() {
-        const qData = recordData.questions || {};
+        const qData = recordData.questions || recordData || {};
         let evisaFiles = qData.evisa_document_path || qData.share_code_document_path;
 
         if (typeof evisaFiles === 'string') {
@@ -3204,7 +3218,7 @@ $(document).ready(function () {
     }
 
     function checkPhotographs() {
-        const qData = recordData.questions || {};
+        const qData = recordData.questions || recordData || {};
         let photoFiles = qData.schengen_visa_image;
 
         if (typeof photoFiles === 'string') {
@@ -3236,7 +3250,7 @@ $(document).ready(function () {
     }
 
     function checkPreviousSchengenVisa() {
-        const qData = recordData.questions || {};
+        const qData = recordData.questions || recordData || {};
         // Helper to safe-get property from flat recordData or nested questions
         const getField = (key) => recordData[key] || qData[key];
 
@@ -3277,7 +3291,7 @@ $(document).ready(function () {
     }
 
     function checkBankStatements() {
-        const qData = recordData.questions || {};
+        const qData = recordData.questions || recordData || {};
         let bankDocs = [];
 
         // 1. Spring Boot Links (bookingDocumentLinks)
@@ -3356,7 +3370,7 @@ $(document).ready(function () {
      * Generic helper for all checks that rely on booking_documents_path/bookingDocumentLinks
      */
     function checkBookingDocs(keywords, missingMessage) {
-        const qData = recordData.questions || {};
+        const qData = recordData.questions || recordData || {};
         let matchedDocs = [];
 
         // Helper to safe-get property (flat or nested)
@@ -3406,7 +3420,7 @@ $(document).ready(function () {
     }
 
     function checkStudentStatusLetter() {
-        const qData = recordData.questions || {};
+        const qData = recordData.questions || recordData || {};
         let bookingFiles = qData.booking_documents_path;
 
         if (typeof bookingFiles === 'string') {
@@ -5543,10 +5557,8 @@ function uploadFileToBackend(file, category) {
             console.log('✅ Upload success:', res);
             $btn.prop('disabled', false).html(originalText);
 
-            // Reload the page or just the data to refresh the list
-            // For simplicity, let's reload the data logic. 
-            // Better: just reload the page for now to ensure clean state
-            location.reload();
+            // Refresh only the documents section instead of reloading entire page
+            showClientDocumentsView();
         },
         error: function (xhr, status, error) {
             console.error('❌ Upload failed:', xhr);
@@ -5572,7 +5584,7 @@ function deleteFileFromBackend(filename) {
         type: 'DELETE',
         success: function (res) {
             console.log('✅ Delete success:', res);
-            location.reload(); // Refresh to update list
+            showClientDocumentsView(); // Refresh documents section
         },
         error: function (xhr, status, error) {
             console.error('❌ Delete failed:', xhr);

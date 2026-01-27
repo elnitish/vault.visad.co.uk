@@ -1,27 +1,27 @@
-console.log("hjhjkj");
-$(document).ready(function() {
+// Covering Letter Schengen Script
+$(document).ready(function () {
     // Function to ensure Cover Letter nav item is active
     function ensureCoverLetterActive() {
         $('.nav-item').removeClass('active');
         $('.nav-item[data-action="covering-letter"]').addClass('active');
     }
-    
+
     // Set active state immediately
     ensureCoverLetterActive();
-    
+
     // Get URL parameters
     const urlParams = new URLSearchParams(window.location.search);
     const recordId = urlParams.get('id');
     const recordType = urlParams.get('type');
-    
+
     let clientData = {
         personal: {},
         questions: {}
     };
-    
+
     // Store co-travellers data globally
     let coTravellersData = [];
-    
+
     // Schengen Embassy Addresses in the UK
     const embassyAddresses = {
         'Austria': 'Embassy of Austria\n18 Belgrave Mews West\nLondon SW1X 8HU\nUnited Kingdom',
@@ -53,24 +53,24 @@ $(document).ready(function() {
         'Sweden': 'Embassy of Sweden\n11 Montagu Place\nLondon W1H 2AL\nUnited Kingdom',
         'Switzerland': 'Embassy of Switzerland\n16-18 Montagu Place\nLondon W1H 2BQ\nUnited Kingdom'
     };
-    
+
     // Check if required parameters are present
     if (!recordId || !recordType) {
         showError('Missing required parameters. Please access this page from the client form viewer.');
         return;
     }
-    
+
     // Load client data
     loadClientData();
-    
+
     function loadClientData() {
         // Check session first
-        $.get('api/auth.php?action=check_session', function(sessionRes) {
+        $.get('api/auth.php?action=check_session', function (sessionRes) {
             if (sessionRes.loggedin) {
                 // Fetch client data based on type
                 const endpoint = recordType === 'traveler' ? 'api/travelers.php' : 'api/dependents.php';
-                
-                $.get(`${endpoint}?action=get_form_data&id=${recordId}`, function(res) {
+
+                $.get(`${endpoint}?action=get_form_data&id=${recordId}`, function (res) {
                     if (res.status === 'success' && res.data) {
                         processClientData(res.data);
                         generateCoveringLetter();
@@ -78,64 +78,64 @@ $(document).ready(function() {
                     } else {
                         showError(res.message || 'Failed to load client data.');
                     }
-                }, 'json').fail(function() {
+                }, 'json').fail(function () {
                     showError('Server request failed. Please try again.');
                 });
             } else {
                 showError('Access Denied. Please log in to the VisaD Vault.');
             }
-        }, 'json').fail(function() {
+        }, 'json').fail(function () {
             showError('Authentication check failed.');
         });
     }
-    
+
     function processClientData(flatData) {
         console.log('🔵 processClientData called with:', flatData);
-        
+
         // Personal fields - MATCHING THE WORKING VERSION
         const personalFieldKeys = [
             'first_name', 'last_name', 'dob', 'nationality', 'passport_no', 'passport_issue', 'passport_expire',
             'contact_number', 'email', 'address_line_1', 'address_line_2', 'city', 'state_province', 'zip_code', 'country',
             'travel_country', 'visa_type', 'visa_center', 'package', 'place_of_birth', 'country_of_birth'
         ];
-        
+
         // Separate personal and questions data
         personalFieldKeys.forEach(key => {
             if (flatData[key] !== undefined) {
                 clientData.personal[key] = flatData[key];
             }
         });
-        
+
         for (const [key, value] of Object.entries(flatData)) {
             if (personalFieldKeys.indexOf(key) === -1) {
                 clientData.questions[key] = value;
             }
         }
-        
+
         // Update header
         const fullName = ((clientData.personal.first_name || '') + ' ' + (clientData.personal.last_name || '')).trim();
         const visaCountry = clientData.personal.travel_country || 'Schengen';
         const visaType = clientData.personal.visa_type || 'Tourist';
-        
+
         $('#client-name-badge').text(fullName.toUpperCase() || 'CLIENT NAME');
         $('#visa-country-header').text(visaCountry || 'Schengen');
         $('#visa-type-header').text(visaType || 'Tourist');
-        
+
         // Check for uploaded client documents
         checkClientDocumentsStatus(flatData);
-        
+
         console.log('🔵 About to call loadCoTravellers');
         // Load co-travellers
         loadCoTravellers();
         console.log('🔵 loadCoTravellers call completed');
     }
-    
+
     function checkClientDocumentsStatus(data) {
         console.log('Checking client documents status...');
-        
+
         let hasClientDocuments = false;
         let checklistComplete = false;
-        
+
         // Check for any client-uploaded documents
         const clientDocFields = [
             'evisa_document_path',
@@ -143,10 +143,10 @@ $(document).ready(function() {
             'schengen_visa_image',
             'booking_documents_path'
         ];
-        
+
         clientDocFields.forEach(field => {
             let files = data[field];
-            
+
             if (files) {
                 // If it's a string, try to parse as JSON
                 if (typeof files === 'string') {
@@ -159,34 +159,34 @@ $(document).ready(function() {
                         }
                     }
                 }
-                
+
                 // If it's an array with items
                 if (Array.isArray(files) && files.length > 0) {
                     hasClientDocuments = true;
                 }
             }
         });
-        
+
         // Check form completion status for checklist
         if (data.form_complete == 1 || data.form_complete === '1') {
             checklistComplete = true;
         }
-        
+
         // Mark buttons if files exist
         if (hasClientDocuments) {
             $('.nav-item[data-action="client-documents"]').addClass('has-files');
             console.log('✅ Client documents found - button marked');
         }
-        
+
         if (checklistComplete) {
             $('.nav-item[data-action="checklist"]').addClass('has-files');
             console.log('✅ Checklist complete - button marked');
         }
-        
+
         // Also check if there are any uploaded documents in categories
         checkDocumentCategories();
     }
-    
+
     function checkDocumentCategories() {
         // Check each document category for uploads
         const categories = ['insurance', 'flight', 'uk-evisa', 'application', 'appointment', 'hotel'];
@@ -198,10 +198,10 @@ $(document).ready(function() {
             appointment: false,
             hotel: false
         };
-        
+
         let completedCount = 0;
         let totalCategories = categories.length;
-        
+
         // Function to check if all categories are complete
         function checkAllCategoriesComplete() {
             if (completedCount >= totalCategories) {
@@ -209,45 +209,45 @@ $(document).ready(function() {
                 console.log('✅ All document categories complete - Checklist marked');
             }
         }
-        
+
         categories.forEach(category => {
-            $.get(`api/document_upload.php?action=get_documents&record_id=${recordId}&record_type=${recordType}&category=${category}`, function(res) {
+            $.get(`api/document_upload.php?action=get_documents&record_id=${recordId}&record_type=${recordType}&category=${category}`, function (res) {
                 if (res.status === 'success' && res.documents && res.documents.length > 0) {
                     // Mark this category as complete
                     categoryStatus[category] = true;
                     completedCount++;
-                    
+
                     // Map category to action name
                     let actionName = category;
                     if (category === 'application') {
                         actionName = 'application-form';
                     }
                     // uk-evisa stays as uk-evisa
-                    
+
                     $(`.nav-item[data-action="${actionName}"]`).addClass('has-files');
                     console.log(`✅ ${category} documents found`);
-                    
+
                     // Check if all categories are now complete
                     checkAllCategoriesComplete();
                 } else {
                     // Category has no documents
                     completedCount++;
                     console.log(`⚠️ No documents found for ${category}`);
-                    
+
                     // Still check if all requests are done
                     checkAllCategoriesComplete();
                 }
-            }, 'json').fail(function() {
+            }, 'json').fail(function () {
                 console.log(`❌ Failed to check ${category}`);
                 completedCount++;
                 checkAllCategoriesComplete();
             });
         });
-        
+
         // Also check client documents
         checkClientDocumentsForChecklist();
     }
-    
+
     function checkClientDocumentsForChecklist() {
         // Wait a bit for all category checks to complete
         setTimeout(() => {
@@ -260,21 +260,21 @@ $(document).ready(function() {
                 '.nav-item[data-action="hotel"]',
                 '.nav-item[data-action="client-documents"]'
             ];
-            
+
             let allHaveFiles = true;
-            
+
             allButtons.forEach(selector => {
                 if (!$(selector).hasClass('has-files')) {
                     allHaveFiles = false;
                 }
             });
-            
+
             if (allHaveFiles) {
                 $('.nav-item[data-action="checklist"]').addClass('has-files');
                 console.log('✅✅✅ ALL DOCUMENTS UPLOADED - Checklist automatically marked!');
             } else {
                 console.log('⚠️ Some documents still missing - Checklist not auto-marked');
-                
+
                 // Log which ones are missing
                 allButtons.forEach(selector => {
                     if (!$(selector).hasClass('has-files')) {
@@ -283,22 +283,22 @@ $(document).ready(function() {
                     }
                 });
             }
-            
+
             // Final enforcement: Ensure covering-letter stays active
             ensureCoverLetterActive();
         }, 2000); // Wait 2 seconds for all AJAX calls to complete
     }
-    
+
     function loadCoTravellers() {
         const p = clientData.personal || {};
         const q = clientData.questions || {};
         // Check both personal and questions for traveler_id
         const travelerId = p.traveler_id || q.traveler_id; // For dependents, this will have the main traveler ID
         const currentId = recordId;
-        
+
         // Hide section initially
         $('#co-travellers-section').hide();
-        
+
         console.log('=== loadCoTravellers CALLED ===');
         console.log('Loading co-travellers:', {
             recordType: recordType,
@@ -308,9 +308,9 @@ $(document).ready(function() {
             questionsData: q,
             fullClientData: clientData
         });
-        
+
         let mainTravelerId;
-        
+
         if (recordType === 'traveler') {
             // Current record is main traveler
             mainTravelerId = currentId;
@@ -327,17 +327,17 @@ $(document).ready(function() {
             console.log('   questionsData keys:', Object.keys(q));
             return;
         }
-        
+
         // Fetch all travellers (main + dependents) and display them together
         const allTravellers = [];
-        
+
         console.log('📡 Fetching main traveler with ID:', mainTravelerId);
-        
+
         // First, fetch the main traveler
-        $.get(`api/travelers.php?action=get_form_data&id=${mainTravelerId}`, function(mainRes) {
+        $.get(`api/travelers.php?action=get_form_data&id=${mainTravelerId}`, function (mainRes) {
             console.log('📥 Main traveler response:', mainRes);
             console.log('Main traveler ID from API:', mainRes.data?.id, 'Expected:', mainTravelerId);
-            
+
             if (mainRes.status === 'success' && mainRes.data) {
                 // Mark as main traveller
                 mainRes.data.is_main = true;
@@ -346,14 +346,14 @@ $(document).ready(function() {
                 console.log('✅ Main traveler added to list with ID:', mainRes.data.id, 'Name:', mainRes.data.first_name);
                 allTravellers.push(mainRes.data);
             }
-            
+
             console.log('📡 Fetching dependents for traveler ID:', mainTravelerId);
-            
+
             // Then fetch all dependents
-            $.get(`api/get_dependents.php?traveler_id=${mainTravelerId}`, function(depRes) {
+            $.get(`api/get_dependents.php?traveler_id=${mainTravelerId}`, function (depRes) {
                 console.log('📥 Dependents response:', depRes);
                 console.log('Number of dependents:', depRes.dependents?.length || 0);
-                
+
                 if (depRes.status === 'success' && depRes.dependents && depRes.dependents.length > 0) {
                     depRes.dependents.forEach((dep, index) => {
                         dep.is_main = false;
@@ -362,70 +362,70 @@ $(document).ready(function() {
                         allTravellers.push(dep);
                     });
                 }
-                
+
                 // Display all travellers together
                 if (allTravellers.length > 0) {
                     console.log('=== FILTERING CO-TRAVELLERS ===');
-                    console.log('All travellers fetched:', allTravellers.map(t => ({id: t.id, name: t.first_name, is_main: t.is_main})));
+                    console.log('All travellers fetched:', allTravellers.map(t => ({ id: t.id, name: t.first_name, is_main: t.is_main })));
                     console.log('Current viewing - ID:', currentId, '(type:', typeof currentId, ') Type:', recordType);
-                    
+
                     // Display all travellers except the current one being viewed
                     const travellersToDisplay = allTravellers.filter(t => {
                         const tId = parseInt(t.id);
                         const currentIdInt = parseInt(currentId);
-                        
+
                         console.log(`  Checking: ${t.first_name || t.name} (ID: ${tId} / ${t.id}, is_main: ${t.is_main})`);
                         console.log(`    Comparing with current: ${currentIdInt} / ${currentId}, recordType: ${recordType}`);
                         console.log(`    Types - tId: ${typeof tId}, currentIdInt: ${typeof currentIdInt}`);
                         console.log(`    Raw comparison: ${t.id} === ${currentId} = ${t.id === currentId}`);
                         console.log(`    Int comparison: ${tId} === ${currentIdInt} = ${tId === currentIdInt}`);
                         console.log(`    String comparison: "${String(t.id)}" === "${String(currentId)}" = ${String(t.id) === String(currentId)}`);
-                        
+
                         // RULE 1: If viewing main traveller, NEVER show anyone with is_main=true
                         if (recordType === 'traveler' && t.is_main === true) {
                             console.log(`    ❌ EXCLUDED - Viewing main traveler, excluding main (is_main=true)`);
                             return false;
                         }
-                        
+
                         // RULE 2: If IDs match exactly, exclude
                         const idsMatch = (tId === currentIdInt) || (String(t.id) === String(currentId)) || (t.id == currentId);
                         console.log(`    IDs Match Check: ${idsMatch}`);
-                        
+
                         if (idsMatch) {
                             console.log(`    ❌ EXCLUDED - ID matches current user`);
                             return false;
                         }
-                        
+
                         console.log(`    ✅ INCLUDED - Will be displayed`);
                         return true;
                     });
-                    
-                    console.log('Final travellers to display:', travellersToDisplay.map(t => ({id: t.id, name: t.first_name})));
+
+                    console.log('Final travellers to display:', travellersToDisplay.map(t => ({ id: t.id, name: t.first_name })));
                     console.log('=== END FILTERING ===');
-                    
+
                     if (travellersToDisplay.length > 0) {
                         // Store globally for letter generation
                         window.coTravellersData = travellersToDisplay;
-                        
+
                         // Get names for title with relationships
                         const names = travellersToDisplay.map(t => {
                             const firstName = t.first_name || t.name?.split(' ')[0] || '';
                             const relationship = t.relationship_to_main ? ` (${t.relationship_to_main})` : '';
                             return firstName.toUpperCase() + relationship;
                         }).filter(n => n).join(', ');
-                        
+
                         if (names) {
                             $('#co-travellers-title').html(`CO-TRAVELLERS: ${names} <span style="font-size: 0.8rem; font-weight: 500; color: #059669; margin-left: 8px;">(Click to expand/edit)</span>`);
                         } else {
                             $('#co-travellers-title').text('CO-TRAVELLERS');
                         }
-                        
+
                         console.log('🎉 DISPLAYING CO-TRAVELLERS ABOVE TOOLBAR');
                         displayCoTravellers(travellersToDisplay);
-                        
+
                         // Add quick relationship selectors above the list
                         displayQuickRelationshipSelectors(travellersToDisplay);
-                        
+
                         // Regenerate letter if it's already been generated
                         if ($('#letter-editor').html()) {
                             console.log('Regenerating letter with co-travellers info');
@@ -438,38 +438,38 @@ $(document).ready(function() {
                 } else {
                     console.log('⚠️ No travellers found at all');
                 }
-                
-            }, 'json').fail(function(xhr, status, error) {
+
+            }, 'json').fail(function (xhr, status, error) {
                 console.error('❌ Failed to fetch dependents:', error, xhr.responseText);
             });
-            
-        }, 'json').fail(function(xhr, status, error) {
+
+        }, 'json').fail(function (xhr, status, error) {
             console.error('❌ Failed to fetch main traveler:', error, xhr.responseText);
         });
     }
-    
+
     function generateCoveringLetter() {
         const p = clientData.personal || {};
         const q = clientData.questions || {};
-        
+
         // Extract data
         const fullName = ((p.first_name || '') + ' ' + (p.last_name || '')).trim() || '[Full Name]';
         const email = p.email || '[Email Address]';
         const phone = p.contact_number || '[Phone Number]';
-        
+
         // Build UK address - format in 2 lines
         const addressLine1 = [p.address_line_1, p.address_line_2].filter(x => x && x.trim()).join(', ');
         const addressLine2 = [p.city, p.state_province, p.zip_code, p.country].filter(x => x && x.trim()).join(', ');
         const address = addressLine1 && addressLine2 ? `${addressLine1}\n${addressLine2}` : '[Full Address in the UK]';
-        
+
         const nationality = p.nationality || 'Indian';
         const today = new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
-        
+
         // Travel details
         const country = p.travel_country || 'Portugal';
         const startDate = q.travel_date_from ? formatDateForDisplay(q.travel_date_from) : '[Planned Travel Date]';
         const endDate = q.travel_date_to ? formatDateForDisplay(q.travel_date_to) : '[Planned Departure Date]';
-        
+
         // Calculate days (inclusive of both start and end date)
         let days = '[X]';
         let dayWord = 'days';
@@ -477,7 +477,7 @@ $(document).ready(function() {
             try {
                 // Parse dates - handle both YYYY-MM-DD and DD/MM/YYYY formats
                 let start, end;
-                
+
                 if (q.travel_date_from.includes('-')) {
                     // Database format: YYYY-MM-DD
                     start = new Date(q.travel_date_from);
@@ -488,7 +488,7 @@ $(document).ready(function() {
                 } else {
                     start = new Date(q.travel_date_from);
                 }
-                
+
                 if (q.travel_date_to.includes('-')) {
                     // Database format: YYYY-MM-DD
                     end = new Date(q.travel_date_to);
@@ -499,7 +499,7 @@ $(document).ready(function() {
                 } else {
                     end = new Date(q.travel_date_to);
                 }
-                
+
                 // Validate dates
                 if (!isNaN(start.getTime()) && !isNaN(end.getTime())) {
                     const diffTime = Math.abs(end - start);
@@ -511,33 +511,33 @@ $(document).ready(function() {
                 days = '[X]';
             }
         }
-        
+
         // Destination city
         const primaryDest = q.primary_destination || '[City Name]';
         const city = extractCityName(primaryDest);
-        
+
         // Derive airport
         const airport = city !== '[City Name]' ? `${city}` : '[Airport/City Name]';
-        
+
         // Get embassy address - simplified version without street address
         const embassyName = `Embassy of ${country}`;
-        
+
         // Occupation details
         const occupation = q.occupation_status || 'Employee';
         const jobTitle = q.job_title || q.occupation_title || '[Job Title]';
         const companyName = q.company_name || q.employer_name || '[Your Company Name]';
-        
+
         // Visitor status
         const fingerprintsTaken = q.fingerprints_taken || 'No';
         const previousVisitYear = q.previous_visit_year || '[Year]';
         const previousCity = q.previous_visit_city || '[Previous City]';
-        
+
         // Optional returning visitor paragraph
         let returningVisitorNote = '';
         if (fingerprintsTaken === 'Yes' && previousVisitYear && previousCity && previousVisitYear !== '[Year]') {
             returningVisitorNote = `\n\nThis will be my second visit to ${country}. I previously visited ${previousCity} in ${previousVisitYear} and thoroughly enjoyed the experience. During that visit, I complied with all visa regulations and returned to the UK on schedule without any issues. I am excited to explore more of what ${country} has to offer.`;
         }
-        
+
         // Residence status clarification
         let residenceStatus = '';
         if (nationality === 'Indian' || nationality === 'India') {
@@ -547,13 +547,13 @@ $(document).ready(function() {
         } else {
             residenceStatus = 'I am currently residing in the United Kingdom and employed';
         }
-        
+
         // Return date for work
         let returnWorkDate = '[Date]';
         if (q.travel_date_to) {
             try {
                 let returnDate;
-                
+
                 if (q.travel_date_to.includes('-')) {
                     // Database format: YYYY-MM-DD
                     returnDate = new Date(q.travel_date_to);
@@ -564,7 +564,7 @@ $(document).ready(function() {
                 } else {
                     returnDate = new Date(q.travel_date_to);
                 }
-                
+
                 if (!isNaN(returnDate.getTime())) {
                     returnDate.setDate(returnDate.getDate() + 1);
                     returnWorkDate = returnDate.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
@@ -574,10 +574,10 @@ $(document).ready(function() {
                 returnWorkDate = '[Date]';
             }
         }
-        
+
         // Dynamic documents list
         const documentsAttached = generateDocumentsList(q);
-        
+
         // Generate the letter with proper spacing and structure
         const letterHTML = `
 <div style="line-height: 1.8;">
@@ -621,23 +621,23 @@ $(document).ready(function() {
 
     <p style="margin-top: 3em;"><strong>${fullName.toUpperCase()}</strong></p>
 </div>`;
-        
+
         $('#letter-editor').html(letterHTML);
     }
-    
+
     function displayQuickRelationshipSelectors(travellers) {
         // Get current user's name
         const currentUserName = ((clientData.personal.first_name || '') + ' ' + (clientData.personal.last_name || '')).trim().toUpperCase();
-        
+
         // Find the main traveller to get their name
         const mainTraveller = travellers.find(t => t.is_main === true);
-        const mainTravellerName = mainTraveller 
+        const mainTravellerName = mainTraveller
             ? ((mainTraveller.first_name || '') + ' ' + (mainTraveller.last_name || '')).trim().toUpperCase()
             : 'MAIN TRAVELLER';
-        
+
         // Create quick selector container before the list
         const $quickSelectors = $('<div id="quick-relationship-selectors" style="padding: 15px; background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%); border-radius: 8px; margin-bottom: 15px;"></div>');
-        
+
         travellers.forEach(traveller => {
             const firstName = traveller.first_name || traveller.name?.split(' ')[0] || 'N/A';
             const lastName = traveller.last_name || traveller.name?.split(' ').slice(1).join(' ') || '';
@@ -645,7 +645,7 @@ $(document).ready(function() {
             const travellerId = traveller.id;
             const travellerType = traveller.traveller_type || 'traveler';
             const relationship = traveller.relationship_to_main || '';
-            
+
             // Determine relationship label
             let relationshipLabel = '';
             if (recordType === 'traveler') {
@@ -657,7 +657,7 @@ $(document).ready(function() {
                     relationshipLabel = `to ${mainTravellerName}`;
                 }
             }
-            
+
             // Build relationship dropdown
             const relationshipOptions = [
                 { value: '', label: 'Select' },
@@ -674,11 +674,11 @@ $(document).ready(function() {
                 { value: 'Carer', label: 'Carer' },
                 { value: 'Other', label: 'Other' }
             ];
-            
-            let relationshipOptionsHTML = relationshipOptions.map(opt => 
+
+            let relationshipOptionsHTML = relationshipOptions.map(opt =>
                 `<option value="${opt.value}" ${relationship === opt.value ? 'selected' : ''}>${opt.label}</option>`
             ).join('');
-            
+
             const $row = $(`
                 <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px; padding: 10px; background: white; border-radius: 6px; border: 1px solid #86efac;">
                     <i class="fas fa-user" style="color: #059669; font-size: 1rem;"></i>
@@ -689,55 +689,55 @@ $(document).ready(function() {
                     </select>
                 </div>
             `);
-            
+
             $quickSelectors.append($row);
         });
-        
+
         // Insert before the co-travellers list
         $('#co-travellers-list').before($quickSelectors);
-        
+
         // Setup change handler for quick selectors
-        $('.quick-relationship-select').on('change', function() {
+        $('.quick-relationship-select').on('change', function () {
             const $select = $(this);
             const travellerId = $select.data('id');
             const travellerType = $select.data('type');
             const relationship = $select.val();
-            
-            console.log('Quick relationship changed:', {travellerId, travellerType, relationship});
-            
+
+            console.log('Quick relationship changed:', { travellerId, travellerType, relationship });
+
             // Save relationship
             saveRelationship(travellerId, travellerType, relationship);
-            
+
             // Also update the corresponding dropdown in the expanded card
             $(`.relationship-select[data-id="${travellerId}"]`).val(relationship);
         });
     }
-    
+
     function displayCoTravellers(travellers) {
         const $list = $('#co-travellers-list');
         $list.empty();
-        
+
         // Clear quick selectors if they exist
         $('#quick-relationship-selectors').remove();
-        
+
         // Safety check - don't show section if no travellers
         if (!travellers || travellers.length === 0) {
             console.log('displayCoTravellers called with no travellers - hiding section');
             $('#co-travellers-section').hide();
             return;
         }
-        
+
         console.log('displayCoTravellers - Rendering', travellers.length, 'traveller(s)');
-        
+
         // Get current user's name
         const currentUserName = ((clientData.personal.first_name || '') + ' ' + (clientData.personal.last_name || '')).trim().toUpperCase();
-        
+
         // Find the main traveller to get their name
         const mainTraveller = travellers.find(t => t.is_main === true);
-        const mainTravellerName = mainTraveller 
+        const mainTravellerName = mainTraveller
             ? ((mainTraveller.first_name || '') + ' ' + (mainTraveller.last_name || '')).trim().toUpperCase()
             : 'MAIN TRAVELLER';
-        
+
         travellers.forEach(traveller => {
             const firstName = traveller.first_name || traveller.name?.split(' ')[0] || 'N/A';
             const lastName = traveller.last_name || traveller.name?.split(' ').slice(1).join(' ') || '';
@@ -751,7 +751,7 @@ $(document).ready(function() {
             const travellerType = traveller.traveller_type || 'traveler';
             const isMain = traveller.is_main ? ' (MAIN TRAVELLER)' : '';
             const relationship = traveller.relationship_to_main || '';
-            
+
             // Determine relationship label based on context
             let relationshipLabel = '';
             if (recordType === 'traveler') {
@@ -767,7 +767,7 @@ $(document).ready(function() {
                     relationshipLabel = `Relationship to ${mainTravellerName}`;
                 }
             }
-            
+
             // Build relationship dropdown
             const relationshipOptions = [
                 { value: '', label: 'Select Relationship' },
@@ -784,11 +784,11 @@ $(document).ready(function() {
                 { value: 'Carer', label: 'Carer' },
                 { value: 'Other', label: 'Other' }
             ];
-            
-            let relationshipOptionsHTML = relationshipOptions.map(opt => 
+
+            let relationshipOptionsHTML = relationshipOptions.map(opt =>
                 `<option value="${opt.value}" ${relationship === opt.value ? 'selected' : ''}>${opt.label}</option>`
             ).join('');
-            
+
             const $card = $(`
                 <div class="co-traveller-card">
                     <div class="co-traveller-name">
@@ -829,33 +829,33 @@ $(document).ready(function() {
                     </button>
                 </div>
             `);
-            
+
             $list.append($card);
         });
-        
+
         // Setup relationship change handler
-        $('.relationship-select').on('change', function() {
+        $('.relationship-select').on('change', function () {
             const $select = $(this);
             const travellerId = $select.data('id');
             const travellerType = $select.data('type');
             const relationship = $select.val();
-            
-            console.log('Relationship changed:', {travellerId, travellerType, relationship});
-            
+
+            console.log('Relationship changed:', { travellerId, travellerType, relationship });
+
             // Save relationship
             saveRelationship(travellerId, travellerType, relationship);
-            
+
             // Also update the quick selector
             $(`.quick-relationship-select[data-id="${travellerId}"]`).val(relationship);
         });
-        
+
         $('#co-travellers-section').fadeIn();
-        
+
         // Setup toggle functionality for co-travellers section
-        $('#co-travellers-toggle').off('click').on('click', function() {
+        $('#co-travellers-toggle').off('click').on('click', function () {
             const $list = $('#co-travellers-list');
             const $chevron = $('#co-travellers-chevron');
-            
+
             if ($list.is(':visible')) {
                 $list.slideUp(300);
                 $chevron.removeClass('rotated');
@@ -865,11 +865,11 @@ $(document).ready(function() {
             }
         });
     }
-    
+
     function saveRelationship(travellerId, travellerType, relationship) {
         // Get opposite relationship
         const oppositeRelationship = getOppositeRelationship(relationship);
-        
+
         console.log('=== SAVING RELATIONSHIP ===');
         console.log('Traveller ID:', travellerId);
         console.log('Traveller Type:', travellerType);
@@ -877,50 +877,50 @@ $(document).ready(function() {
         console.log('Opposite:', oppositeRelationship);
         console.log('Current User ID:', recordId);
         console.log('Current User Type:', recordType);
-        
+
         // Determine which endpoint to use - ADD ?action=update_field to URL
-        const endpoint = travellerType === 'traveler' 
-            ? 'api/travelers.php?action=update_field' 
+        const endpoint = travellerType === 'traveler'
+            ? 'api/travelers.php?action=update_field'
             : 'api/dependents.php?action=update_field';
-        
+
         console.log('Endpoint for co-traveller:', endpoint);
-        
+
         const postData = {
             id: travellerId,
             field: 'relationship_to_main',
             value: relationship
         };
-        
+
         console.log('POST Data:', postData);
-        
+
         // Save the relationship for the selected traveller
-        $.post(endpoint, postData, function(res) {
+        $.post(endpoint, postData, function (res) {
             console.log('Response from server:', res);
-            
+
             if (res.status === 'success') {
                 console.log('✅ Relationship saved for traveller', travellerId);
-                
+
                 // Now save the opposite relationship for the current user
-                const currentEndpoint = recordType === 'traveler' 
-                    ? 'api/travelers.php?action=update_field' 
+                const currentEndpoint = recordType === 'traveler'
+                    ? 'api/travelers.php?action=update_field'
                     : 'api/dependents.php?action=update_field';
-                
+
                 console.log('Endpoint for current user:', currentEndpoint);
-                
+
                 const postData2 = {
                     id: recordId,
                     field: 'relationship_to_main',
                     value: oppositeRelationship
                 };
-                
+
                 console.log('POST Data for current user:', postData2);
-                
-                $.post(currentEndpoint, postData2, function(res2) {
+
+                $.post(currentEndpoint, postData2, function (res2) {
                     console.log('Response for current user:', res2);
-                    
+
                     if (res2.status === 'success') {
                         console.log('✅ Opposite relationship saved for current user');
-                        
+
                         // Update the stored co-travellers data with new relationship
                         if (window.coTravellersData) {
                             const travellerIndex = window.coTravellersData.findIndex(t => t.id == travellerId);
@@ -928,42 +928,42 @@ $(document).ready(function() {
                                 window.coTravellersData[travellerIndex].relationship_to_main = relationship;
                             }
                         }
-                        
+
                         // Regenerate letter to update co-travellers text
                         if ($('#letter-editor').html()) {
                             console.log('Regenerating letter with updated relationships');
                             generateCoveringLetter();
                         }
-                        
+
                         // Show success notification
                         showNotification('Relationship saved successfully', 'success');
                     } else {
                         console.error('❌ Failed to save opposite relationship:', res2);
                         showNotification('Failed to save opposite relationship: ' + (res2.message || 'Unknown error'), 'error');
                     }
-                }, 'json').fail(function(xhr, status, error) {
+                }, 'json').fail(function (xhr, status, error) {
                     console.error('❌ Network error saving opposite relationship');
                     console.error('Status:', status);
                     console.error('Error:', error);
                     console.error('Response:', xhr.responseText);
                     showNotification('Network error: ' + error, 'error');
                 });
-                
+
             } else {
                 console.error('❌ Failed to save relationship:', res);
                 showNotification('Failed to save relationship: ' + (res.message || 'Unknown error'), 'error');
             }
-        }, 'json').fail(function(xhr, status, error) {
+        }, 'json').fail(function (xhr, status, error) {
             console.error('❌ Network error saving relationship');
             console.error('Status:', status);
             console.error('Error:', error);
             console.error('Response:', xhr.responseText);
             showNotification('Network error: ' + error, 'error');
         });
-        
+
         console.log('=== END SAVING RELATIONSHIP ===');
     }
-    
+
     function getOppositeRelationship(relationship) {
         const opposites = {
             'Parent': 'Child',
@@ -979,10 +979,10 @@ $(document).ready(function() {
             'Carer': 'Child',
             'Other': 'Other'
         };
-        
+
         return opposites[relationship] || relationship;
     }
-    
+
     function showNotification(message, type) {
         const bgColor = type === 'success' ? '#10b981' : '#ef4444';
         const $notification = $(`
@@ -990,30 +990,30 @@ $(document).ready(function() {
                 <i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-circle'}"></i> ${message}
             </div>
         `);
-        
+
         $('body').append($notification);
-        
+
         setTimeout(() => {
-            $notification.fadeOut(300, function() {
+            $notification.fadeOut(300, function () {
                 $(this).remove();
             });
         }, 3000);
     }
-    
+
     function getCoTravellersIntroText() {
         // Check if we have stored co-travellers data from loadCoTravellers
         if (!window.coTravellersData || window.coTravellersData.length === 0) {
             return '';
         }
-        
+
         const travellers = window.coTravellersData;
-        
+
         if (travellers.length === 0) {
             return '';
         }
-        
+
         let text = ' I am traveling with ';
-        
+
         if (travellers.length === 1) {
             const t = travellers[0];
             const firstName = t.first_name || t.name?.split(' ')[0] || '';
@@ -1024,9 +1024,9 @@ $(document).ready(function() {
             const pronoun = gender === 'male' ? 'his' : gender === 'female' ? 'her' : 'their';
             const passportNo = t.passport_no || 'N/A';
             const dob = t.dob || 'N/A';
-            
+
             text += `${relationship}, <strong>${fullName}</strong>, ${pronoun} passport number: ${passportNo}, date of birth: ${dob}. `;
-            
+
         } else {
             // Multiple co-travellers
             travellers.forEach((t, index) => {
@@ -1038,7 +1038,7 @@ $(document).ready(function() {
                 const pronoun = gender === 'male' ? 'his' : gender === 'female' ? 'her' : 'their';
                 const passportNo = t.passport_no || 'N/A';
                 const dob = t.dob || 'N/A';
-                
+
                 if (index === 0) {
                     text += `${relationship}, <strong>${fullName}</strong>, ${pronoun} passport number: ${passportNo}, date of birth: ${dob}`;
                 } else if (index === travellers.length - 1) {
@@ -1049,12 +1049,12 @@ $(document).ready(function() {
             });
             text += '. ';
         }
-        
+
         text += 'We are all applying for our visas together and plan to travel as a group.';
-        
+
         return ' ' + text;
     }
-    
+
     function getCulturalDescription(country) {
         const descriptions = {
             'Portugal': 'fascinating culture, maritime heritage, and coastal beauty',
@@ -1088,7 +1088,7 @@ $(document).ready(function() {
         };
         return descriptions[country] || 'fascinating culture, rich heritage, and beautiful landscapes';
     }
-    
+
     function getCityActivities(country, city) {
         const activities = {
             'Portugal': 'I also look forward to enjoying traditional Portuguese cuisine such as bacalhau and pastéis de nata and immersing myself in the local vibrant cultural and historical charm.',
@@ -1122,15 +1122,15 @@ $(document).ready(function() {
         };
         return activities[country] || 'I also look forward to immersing myself in the local vibrant cultural and historical charm.';
     }
-    
+
     function extractCityName(destination) {
         if (!destination || destination === '[City Name]') return '[City Name]';
-        
+
         // Remove common airport codes and extract city name
         const cityMatch = destination.match(/^([^(]+)/);
         return cityMatch ? cityMatch[1].trim() : destination;
     }
-    
+
     function generateDocumentsList(questions) {
         const docs = [
             '1. Completed Schengen visa application form',
@@ -1144,33 +1144,33 @@ $(document).ready(function() {
             '9. Hotel booking confirmation',
             '10. Flight booking confirmation (return ticket) with fully paid invoice'
         ];
-        
+
         // Add previous Schengen visa if fingerprints were taken
         if (questions.fingerprints_taken === 'Yes') {
             docs.push('11. Copy of Previous Schengen visa');
         }
-        
+
         // Add credit card statement if they have a credit card
         if (questions.has_credit_card === 'Yes') {
             const docNumber = questions.fingerprints_taken === 'Yes' ? '12' : '11';
             docs.push(`${docNumber}. Copy of recent Credit card Statement`);
         }
-        
+
         return docs.join('\n');
     }
-    
+
     function formatDateForDisplay(dateStr) {
         if (!dateStr) return '[Date]';
-        
+
         const parts = dateStr.split('-');
         if (parts.length === 3 && parts[0].length === 4) {
             if (dateStr === '0000-00-00') return '[Date]';
             return `${parts[2]}/${parts[1]}/${parts[0]}`;
         }
-        
+
         return dateStr;
     }
-    
+
     function showLetterSection() {
         // Update header with client information
         const fullName = ((clientData.personal.first_name || '') + ' ' + (clientData.personal.last_name || '')).trim() || 'Loading...';
@@ -1178,69 +1178,69 @@ $(document).ready(function() {
         const visaType = clientData.personal.visa_type || '-';
         const city = clientData.personal.visa_center || '-';
         const packageType = clientData.personal.package || '-';
-        
+
         $('#client-name').text(fullName);
         $('#visa-country').text(country);
         $('#visa-type').text(visaType);
         $('#application-city').text(city);
         $('#package-type').text(packageType);
-        
+
         // Ensure covering-letter nav item is active
         ensureCoverLetterActive();
-        
+
         $('#loading-state').hide();
         $('#letter-section').show();
     }
-    
+
     function showError(message) {
         $('#loading-state').hide();
         $('#error-message').text(message);
         $('#error-state').show();
     }
-    
+
     // Reset button
-    $('#reset-btn').on('click', function() {
+    $('#reset-btn').on('click', function () {
         if (confirm('Are you sure you want to reset the letter? All changes will be lost.')) {
             generateCoveringLetter();
         }
     });
-    
+
     // Close button
-    $('#close-btn').on('click', function() {
+    $('#close-btn').on('click', function () {
         window.close();
-        setTimeout(function() {
+        setTimeout(function () {
             window.history.back();
         }, 100);
     });
-    
+
     // Download button - DOC format only
-    $('#download-btn').on('click', function() {
+    $('#download-btn').on('click', function () {
         downloadAsDoc();
     });
-    
+
     // Navigation Bar Click Handlers
-    $('.nav-item').on('click', function() {
+    $('.nav-item').on('click', function () {
         const action = $(this).data('action');
-        
+
         if (action === 'covering-letter') {
             // Already on covering letter page
             return;
         }
-        
+
         if (action === 'client-documents') {
             // Navigate to form_data_viewer and scroll to client documents section
             window.location.href = `form_data_viewer.html?id=${recordId}&type=${recordType}#client-documents`;
             return;
         }
-        
+
         if (action === 'checklist') {
             // Navigate to form_data_viewer checklist
             window.location.href = `form_data_viewer.html?id=${recordId}&type=${recordType}#checklist`;
             return;
         }
-        
+
         const baseUrl = getActionUrl(action);
-        
+
         if (baseUrl) {
             window.location.href = baseUrl;
         }
@@ -1248,8 +1248,8 @@ $(document).ready(function() {
 
     function getActionUrl(action) {
         const params = `?id=${recordId}&type=${recordType}`;
-        
-        switch(action) {
+
+        switch (action) {
             case 'locker-data':
                 return `form_data_viewer.html${params}`;
             case 'insurance':
@@ -1273,9 +1273,9 @@ $(document).ready(function() {
             'appointment': 'appointment',
             'hotel': 'hotel'
         };
-        
+
         categories.forEach(category => {
-            $.get(`api/documents.php?action=get_documents&id=${recordId}&type=${recordType}&category=${category}`, function(res) {
+            $.get(`api/documents.php?action=get_documents&id=${recordId}&type=${recordType}&category=${category}`, function (res) {
                 if (res.status === 'success' && res.documents && res.documents.length > 0) {
                     const action = categoryToAction[category];
                     $(`.nav-item[data-action="${action}"]`).addClass('has-files');
@@ -1283,7 +1283,7 @@ $(document).ready(function() {
             }, 'json');
         });
     }
-    
+
     setTimeout(() => {
         checkDocumentStatus();
         // Ensure covering-letter is still active after all checks
@@ -1296,19 +1296,19 @@ $(document).ready(function() {
         const fullName = ((clientData.personal.first_name || '') + ' ' + (clientData.personal.last_name || '')).trim() || 'Client';
         const country = clientData.personal.travel_country || 'Schengen';
         const filename = `${country}_Tourist_Visa_Letter_${fullName.replace(/\s+/g, '_')}.doc`;
-        
+
         // Get the text content
         const content = $('#letter-editor').text();
-        
+
         // Create RTF document
         let rtf = '{\\rtf1\\ansi\\ansicpg1252\\deff0\\nouicompat\\deflang1033\n';
         rtf += '{\\fonttbl{\\f0\\fnil\\fcharset0 Calibri;}}\n';
         rtf += '{\\*\\generator Riched20 10.0.19041}\\viewkind4\\uc1\n';
         rtf += '\\pard\\sa200\\sl276\\slmult1\\f0\\fs22\n';
-        
+
         // Split content into lines and process
         const lines = content.split('\n');
-        
+
         lines.forEach(line => {
             const trimmed = line.trim();
             if (trimmed) {
@@ -1317,10 +1317,10 @@ $(document).ready(function() {
                     .replace(/\\/g, '\\\\')
                     .replace(/{/g, '\\{')
                     .replace(/}/g, '\\}');
-                
+
                 // Make specific lines bold
                 const isBold = trimmed.match(/^[A-Z][A-Z\s]+$|^Subject:|^Dear |^Yours sincerely,|^Purpose of Visit$|^Travel Itinerary$|^Accommodation and Travel Details$|^Financial Means$|^Ties to the United Kingdom$|^Supporting Documents$|^Closing Statement$/);
-                
+
                 if (isBold) {
                     rtf += '\\b ' + escaped + '\\b0\\par\n';
                 } else if (trimmed.startsWith('•')) {
@@ -1332,9 +1332,9 @@ $(document).ready(function() {
                 rtf += '\\par\n';
             }
         });
-        
+
         rtf += '}';
-        
+
         // Create blob and download
         const blob = new Blob([rtf], { type: 'application/rtf' });
         const link = document.createElement('a');
@@ -1343,12 +1343,12 @@ $(document).ready(function() {
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
-        
+
         // Clean up
         setTimeout(() => {
             URL.revokeObjectURL(link.href);
         }, 100);
-        
+
         // Show success feedback
         const btn = $('#download-btn');
         const originalHtml = btn.html();
@@ -1357,7 +1357,7 @@ $(document).ready(function() {
             btn.html(originalHtml).prop('disabled', false);
         }, 2000);
     }
-    
+
     function escapeRtf(text) {
         return text
             .replace(/\\/g, '\\\\')
