@@ -1821,23 +1821,25 @@ $(document).ready(function () {
     // Helper function to fetch documents by category
     function fetchDocumentsByCategory(category) {
         return new Promise((resolve) => {
-            // First, get documents from the documents API
-            $.get(`api/documents.php?action=get_documents&id=${recordId}&type=${recordType}&category=${category}`,
+            // First, get documents from the documents API (Spring Boot)
+            $.get(`/api/documents/get_documents?id=${recordId}&type=${recordType}&category=${category}`,
                 function (res) {
                     let files = [];
 
                     // Add files from documents API
-                    if (res.status === 'success' && res.documents && res.documents.length > 0) {
-                        files = res.documents.map(doc => {
-                            let fileUrl = doc.url || doc.file_path;
+                    // Spring Boot returns data in res.data, not res.documents
+                    const documents = res.data || res.documents || [];
+                    if (res.status === 'success' && documents.length > 0) {
+                        files = documents.map(doc => {
+                            let fileUrl = doc.url || doc.filePath || doc.file_path;
                             if (!fileUrl.startsWith('http://') && !fileUrl.startsWith('https://') && !fileUrl.startsWith('/')) {
                                 fileUrl = '/' + fileUrl;
                             }
                             return {
-                                name: doc.original_filename || doc.name || doc.filename || 'Document',
+                                name: doc.originalFilename || doc.original_filename || doc.name || doc.filename || 'Document',
                                 url: fileUrl,
-                                upload_date: doc.upload_date || doc.created_at,
-                                file_size: doc.file_size || doc.size
+                                upload_date: doc.uploadedAt || doc.upload_date || doc.created_at,
+                                file_size: doc.fileSize || doc.file_size || doc.size
                             };
                         });
                     }
