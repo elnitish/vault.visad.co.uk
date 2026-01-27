@@ -4211,7 +4211,7 @@ If you need any assistance, please call us directly.`;
 
         // Call Spring Boot API to save invoice
         $.ajax({
-            url: `/invoices/${recordData.id}/save`,
+            url: `${API_BASE_URL}/invoices/${recordData.id}/save`,
             method: 'POST',
             contentType: 'application/json',
             data: JSON.stringify(invoicePayload),
@@ -4865,7 +4865,7 @@ If you need any assistance, please call us directly.`;
 
         // Send email via Spring Boot API
         $.ajax({
-            url: '/email/send-invoice',
+            url: `${API_BASE_URL}/email/send-invoice`,
             method: 'POST',
             contentType: 'application/json',
             data: JSON.stringify(emailData),
@@ -5110,7 +5110,7 @@ If you need any assistance, please call us directly.`;
 
         // Send email via Spring Boot API
         $.ajax({
-            url: '/email/send-invoice',
+            url: `${API_BASE_URL}/email/send-invoice`,
             method: 'POST',
             contentType: 'application/json',
             data: JSON.stringify(emailData),
