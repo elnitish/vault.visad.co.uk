@@ -1,5 +1,5 @@
 // Main Application Script
-console.log('Main.js Version: 2.0 (Fixes Applied)');
+console.log('Main.js Version: 2.1 (Performance Optimization)');
 $(document).ready(function () {
 
     let userRole = 'admin'; // Default role (No Auth)
@@ -157,13 +157,13 @@ $(document).ready(function () {
                 window.triggerGalaxyWarp(function () {
                     $('#login-container').hide();
                     $('#app-container').fadeIn(300);
-                    loadData();
+                    fetchAndRenderRecords();
                 });
             } else {
                 // Fallback if galaxy warp not available
                 $('#login-container').fadeOut(200, () => {
                     $('#app-container').fadeIn(200);
-                    loadData();
+                    fetchAndRenderRecords();
                 });
             }
         } else {
@@ -1225,38 +1225,47 @@ $(document).ready(function () {
     });
 
     function checkPassport(passportNo, recordId, recordType, wrapper) {
-        // Use Spring Boot search endpoint
-        apiRequest(`/travelers?passport=${encodeURIComponent(passportNo)}`, 'GET', null, (res) => {
-            const existingBtn = wrapper.find('.autofill-btn');
-            // Check if we found a match that is NOT the current record
-            // Spring Boot might return a list or single object? Assuming list from 'search' or single from 'lookup'
-            // If it returns a list, take the first one?
-            // Let's assume response.data is the list or object.
-            let match = null;
-            if (res.status === 'success' && res.data) {
-                if (Array.isArray(res.data) && res.data.length > 0) {
-                    match = res.data[0];
-                } else if (!Array.isArray(res.data) && res.data.id) {
-                    match = res.data;
-                }
-            }
+        // Optimization: Use local data first to avoid redundant API calls
+        // "You have all the data at once"
+        const searchPassport = passportNo.trim().toLowerCase();
+        let match = null;
 
-            if (match && match.id != recordId) {
-                const mappedMatch = mapToSnakeCase(match); // Ensure it's snake_case for autofillClientData
-                if (!existingBtn.length) {
-                    const autofillBtn = $(`<button class="autofill-btn" title="Click to autofill details from matching record">Seems VisaD Client</button>`);
-                    autofillBtn.on('click', (e) => {
-                        e.stopPropagation();
-                        e.preventDefault();
-                        autofillClientData(mappedMatch, recordId, recordType, wrapper);
-                    });
-                    // Place it relative to the passport field in the body
-                    wrapper.find('[data-field="passport_no"]').first().after(autofillBtn);
+        // Search local records (allLoadedRecords is global)
+        if (typeof allLoadedRecords !== 'undefined' && Array.isArray(allLoadedRecords)) {
+            for (const traveler of allLoadedRecords) {
+                // Check traveler
+                if (traveler.passport_no && traveler.passport_no.trim().toLowerCase() === searchPassport) {
+                    match = traveler;
+                    break;
                 }
-            } else {
-                existingBtn.remove();
+                // Check dependents
+                if (traveler.dependents && Array.isArray(traveler.dependents)) {
+                    const depMatch = traveler.dependents.find(d => d.passport_no && d.passport_no.trim().toLowerCase() === searchPassport);
+                    if (depMatch) {
+                        match = depMatch;
+                        break;
+                    }
+                }
             }
-        });
+        }
+
+        // Handle match found locally
+        const existingBtn = wrapper.find('.autofill-btn');
+        if (match && match.id != recordId) {
+            const mappedMatch = mapToSnakeCase(match); // Ensure it's snake_case for autofillClientData
+            if (!existingBtn.length) {
+                const autofillBtn = $(`<button class="autofill-btn" title="Click to autofill details from matching record">Seems VisaD Client</button>`);
+                autofillBtn.on('click', (e) => {
+                    e.stopPropagation();
+                    e.preventDefault();
+                    autofillClientData(mappedMatch, recordId, recordType, wrapper);
+                });
+                // Place it relative to the passport field in the body
+                wrapper.find('[data-field="passport_no"]').first().after(autofillBtn);
+            }
+        } else {
+            existingBtn.remove();
+        }
     }
 
     function autofillClientData(data, targetId, targetTable, wrapper) {
@@ -2571,44 +2580,37 @@ $(document).ready(function () {
             currentPage = 1;
             allLoadedRecords = [];
             hasMoreRecords = true;
-            // Show skeleton loading
             container.html(getSkeletonHtml(6));
         } else {
-            // Show loading at bottom
             $('#load-more-btn').html('<i class="fas fa-spinner fa-spin"></i> Loading...').prop('disabled', true);
         }
 
-        const apiStartTime = performance.now(); // Start reliable timer
-        // Limit set to 5000 to load all records at once as requested
-        apiRequest(`/travelers?page=${currentPage}&limit=5000`, 'GET', null, function (response) {
+        const apiStartTime = performance.now();
+        // OPTIMIZATION: Initial fast load (50 records) vs Full load
+        const isInitialFastLoad = !append && currentPage === 1;
+        const limit = isInitialFastLoad ? 50 : 5000;
+
+        apiRequest(`/travelers?page=${currentPage}&limit=${limit}`, 'GET', null, function (response) {
             const apiDuration = (performance.now() - apiStartTime).toFixed(2);
-            console.log(`%c API RESPONSE TIME: ${apiDuration}ms`, 'color: #d63384; font-weight: bold;'); // Log duration
-            isLoading = false;
+            console.log(`%c API RESPONSE TIME (${limit} recs): ${apiDuration}ms`, 'color: #d63384; font-weight: bold;');
+
+            if (!isInitialFastLoad) isLoading = false;
 
             if (response.status === 'success') {
-                console.log("Raw API Response:", response); // DEBUG: Raw response
-                // Spring Boot returns Page object in data: { content: [...], totalElements: ..., totalPages: ... }
-                // OR likely wrapped in our ApiResponse: { status: 'success', data: { content: ... } }
-
-                // Handle both potential structures (direct list or Page object)
                 let records = [];
                 let totalRecords = 0;
                 let totalPages = 1;
 
                 if (response.data && Array.isArray(response.data.content)) {
-                    // Page object
-                    records = mapToSnakeCase(response.data.content); // Map camelCase to snake_case
-                    console.log("Fetched Records:", records); // DEBUG: Log data as requested
+                    records = mapToSnakeCase(response.data.content);
                     totalRecords = response.data.totalElements;
                     totalPages = response.data.totalPages;
                     hasMoreRecords = currentPage < totalPages;
                 } else if (Array.isArray(response.data)) {
-                    // Direct list
                     records = mapToSnakeCase(response.data);
                     totalRecords = records.length;
-                    hasMoreRecords = false; // Assume no pagination if list returned
+                    hasMoreRecords = false;
                 }
-                console.log("Processed Records (All):", records); // DEBUG: Log final list
 
                 if (!append) {
                     container.empty();
@@ -2617,107 +2619,136 @@ $(document).ready(function () {
                 }
 
                 if (records.length > 0) {
-                    allLoadedRecords = allLoadedRecords.concat(records);
-
-                    // Optimized Progressive Rendering
-                    const renderStartTime = performance.now();
-
-                    // Render function for batches
-                    const renderBatch = (items) => {
-                        return items.map(record => createTravelerHtml(record)).join('');
-                    };
-
-                    // 1. Immediate Render (First 50 records) - Fast Interaction
-                    const initialBatchSize = 50;
-                    const initialBatch = records.slice(0, initialBatchSize);
-                    container.append(renderBatch(initialBatch));
-
-                    const renderDuration = (performance.now() - renderStartTime).toFixed(2);
-                    console.log(`%c UI RENDER TIME (Initial ${initialBatchSize}): ${renderDuration}ms`, 'color: #fd7e14; font-weight: bold;');
-
-                    // 2. Background Render (Remaining records) - Unblocks Main Thread
-                    const remainingRecords = records.slice(initialBatchSize);
-                    if (remainingRecords.length > 0) {
-                        // Render remaining in chunks of 100 using setTimeout to yield to main thread
-                        const chunkSize = 100;
-                        let processed = 0;
-
-                        const processNextChunk = () => {
-                            const chunk = remainingRecords.slice(processed, processed + chunkSize);
-                            if (chunk.length > 0) {
-                                container.append(renderBatch(chunk));
-                                processed += chunkSize;
-                                // Schedule next chunk
-                                setTimeout(processNextChunk, 0);
-                            }
-                        };
-
-                        // Start background rendering
-                        setTimeout(processNextChunk, 0);
-                    }
-
-                    // Add Load More button if there are more records
-                    if (hasMoreRecords) {
-                        container.append(`
-                                <div id="load-more-container" class="load-more-container">
-                                    <button id="load-more-btn" class="load-more-btn">
-                                        <i class="fas fa-chevron-down"></i> Load More 
-                                        <span class="load-more-info">(${currentPage}/${totalPages} pages)</span>
-                                    </button>
-                                    <button id="load-all-btn" class="load-all-btn" title="Load all ${totalRecords} records">
-                                        <i class="fas fa-list"></i> Load All
-                                    </button>
-                                </div>
-                            `);
-                    }
-
-                    if (!append) {
-                        setupFilters(allLoadedRecords);
-                        window.allRecordsCache = allLoadedRecords; // Cache for toggle view switching
-                        renderCountryScroller(allLoadedRecords);
-                        updateRecordsCountInfo(totalRecords);
-
-                        // Restore state
-                        const savedState = JSON.parse(localStorage.getItem(appStateKey)) || {};
-                        if (savedState.sort) {
-                            sortRecordsBy(savedState.sort.type, false);
-                        }
-                        applyFilters();
-
-                        if (savedState.expandedRecordId) {
-                            const targetWrapper = $(`.traveler-group-wrapper[data-main-traveler-id="${savedState.expandedRecordId}"]`);
-                            if (targetWrapper.length) {
-                                // Small delay to ensure DOM is ready
-                                setTimeout(() => {
-                                    targetWrapper.find('.traveler-container .expand-btn').first().click();
-                                    $('html, body').animate({ scrollTop: targetWrapper.offset().top - 70 }, 300);
-                                }, 100);
-
-                                // Clear the scrollToNew flag if it was set
-                                if (savedState.scrollToNew) {
-                                    delete savedState.scrollToNew;
-                                    localStorage.setItem(appStateKey, JSON.stringify(savedState));
-                                }
-                            }
-                        }
+                    if (append) {
+                        allLoadedRecords = allLoadedRecords.concat(records);
                     } else {
-                        // Update filters with new data
-                        setupFilters(allLoadedRecords);
-                        window.allRecordsCache = allLoadedRecords; // Cache for toggle view switching
-                        renderCountryScroller(allLoadedRecords);
-                        updateRecordsCountInfo(totalRecords);
-                        applyFilters();
+                        allLoadedRecords = records;
                     }
-                } else if (!append) {
-                    container.html('<p class="no-records">No traveler records found.</p>');
-                    $('#filter-container').empty();
-                    $('#country-scroller').empty();
+
+                    // Direct Render for this batch
+                    const html = records.map(record => createTravelerHtml(record)).join('');
+                    container.append(html);
+
+                    console.log(`%c UI RENDERED ${records.length} records.`, 'color: #fd7e14; font-weight: bold;');
+
+                    if (isInitialFastLoad) {
+                        fetchRestOfRecords(container);
+                    }
+
+                    updateUIStart(append, totalRecords);
+
+                } else {
+                    if (!append) {
+                        container.html('<p class="no-records">No traveler records found.</p>');
+                        $('#filter-container').empty();
+                        $('#country-scroller').empty();
+                    }
+                    isLoading = false;
+                }
+            } else {
+                isLoading = false;
+            }
+        }, function () {
+            isLoading = false;
+        });
+    }
+
+    function fetchRestOfRecords(container) {
+        console.log("Fetching remaining travelers in background...");
+
+        apiRequest(`/travelers?page=1&limit=5000`, 'GET', null, function (response) {
+            if (response.status === 'success') {
+                let allRecords = [];
+                if (response.data && Array.isArray(response.data.content)) {
+                    allRecords = mapToSnakeCase(response.data.content);
+                } else if (Array.isArray(response.data)) {
+                    allRecords = mapToSnakeCase(response.data);
+                }
+
+                // Deduplicate: remove first 50 we already showed
+                const newRecords = allRecords.slice(50);
+                console.log(`Background fetch complete. Merging ${newRecords.length} new records.`);
+
+                allLoadedRecords = allLoadedRecords.concat(newRecords);
+
+                // Update UI state: we now have all records
+                hasMoreRecords = false;
+                $('#load-more-container').remove();
+
+                renderProgressively(newRecords, container, function () {
+                    window.allRecordsCache = allLoadedRecords;
+                    updateRecordsCountInfo(allLoadedRecords.length);
+
+                    // Update filters and scroller with full data
+                    setupFilters(allLoadedRecords);
+                    renderCountryScroller(allLoadedRecords);
+
+                    // Try to restore expanded state if it wasn't found in initial batch
+                    const savedState = JSON.parse(localStorage.getItem(appStateKey)) || {};
+                    if (savedState.expandedRecordId) {
+                        const targetWrapper = $(`.traveler-group-wrapper[data-main-traveler-id="${savedState.expandedRecordId}"]`);
+                        if (targetWrapper.length && !targetWrapper.find('.traveler-container').first().hasClass('expanded')) {
+                            setTimeout(() => {
+                                targetWrapper.find('.traveler-container .expand-btn').first().click();
+                                $('html, body').animate({ scrollTop: targetWrapper.offset().top - 70 }, 300);
+                            }, 100);
+                        }
+                    }
+                });
+            }
+            isLoading = false;
+        }, function () {
+            isLoading = false;
+        });
+    }
+
+    function renderProgressively(records, container, callback) {
+        const chunkSize = 100;
+        let index = 0;
+        function renderChunk() {
+            const chunk = records.slice(index, index + chunkSize);
+            if (chunk.length > 0) {
+                const html = chunk.map(r => createTravelerHtml(r)).join('');
+                container.append(html);
+                index += chunkSize;
+                requestAnimationFrame(renderChunk);
+            } else {
+                applyFilters(); // Re-apply filters once all are loaded
+                if (callback) callback();
+            }
+        }
+        renderChunk();
+    }
+
+    function updateUIStart(append, totalRecords) {
+        setupFilters(allLoadedRecords);
+        window.allRecordsCache = allLoadedRecords;
+        renderCountryScroller(allLoadedRecords);
+        updateRecordsCountInfo(allLoadedRecords.length);
+
+        if (!append) {
+            const savedState = JSON.parse(localStorage.getItem(appStateKey)) || {};
+            if (savedState.sort) {
+                sortRecordsBy(savedState.sort.type, false);
+            }
+            applyFilters();
+
+            if (savedState.expandedRecordId) {
+                const targetWrapper = $(`.traveler-group-wrapper[data-main-traveler-id="${savedState.expandedRecordId}"]`);
+                if (targetWrapper.length) {
+                    setTimeout(() => {
+                        targetWrapper.find('.traveler-container .expand-btn').first().click();
+                        $('html, body').animate({ scrollTop: targetWrapper.offset().top - 70 }, 300);
+                    }, 100);
+                    if (savedState.scrollToNew) {
+                        delete savedState.scrollToNew;
+                        localStorage.setItem(appStateKey, JSON.stringify(savedState));
+                    }
                 }
             }
-        }, function (xhr) {
-            isLoading = false;
-            // apiRequest handles 401, but we might want to reset loading state
-        });
+        } else {
+            applyFilters();
+        }
     }
 
     // Load More button click handler
@@ -2764,48 +2795,9 @@ $(document).ready(function () {
     }
 
     function loadAllRecords() {
-        if (isLoading) return;
-        isLoading = true;
-
-        const container = $('#records-container');
-        // Show skeleton loading
-        container.html(getSkeletonHtml(8));
-
-        // Load with high limit to get all records
-        // Load with high limit to get all records
-        apiRequest('/travelers?page=1&limit=2000', 'GET', null, function (response) {
-            isLoading = false;
-
-            if (response.status === 'success') {
-                let records = [];
-                if (response.data && Array.isArray(response.data.content)) {
-                    records = mapToSnakeCase(response.data.content);
-                } else if (Array.isArray(response.data)) {
-                    records = mapToSnakeCase(response.data);
-                }
-
-                allLoadedRecords = records;
-                hasMoreRecords = false;
-
-                container.empty();
-
-                if (records.length > 0) {
-                    records.forEach(record => container.append(createTravelerHtml(record)));
-                    setupFilters(allLoadedRecords);
-                    renderCountryScroller(allLoadedRecords);
-
-                    const savedState = JSON.parse(localStorage.getItem(appStateKey)) || {};
-                    if (savedState.sort) {
-                        sortRecordsBy(savedState.sort.type, false);
-                    }
-                    applyFilters();
-                } else {
-                    container.html('<p class="no-records">No traveler records found.</p>');
-                }
-            }
-        }, function () {
-            isLoading = false;
-        });
+        // Just trigger the standard fetch which now handles full loading progressively
+        currentPage = 1;
+        fetchAndRenderRecords(false);
     }
 
     function refreshSingleRecord(travelerId) {
@@ -6482,7 +6474,13 @@ If you need any assistance, please call us directly.`;
     }
 
 
-    fetchAndRenderRecords();
-
-    // initialize_app();
+    // Gate application initialization behind auth check
+    if (VaultAuth.isAuthenticated()) {
+        $('#login-container').hide();
+        $('#app-container').fadeIn(200);
+        fetchAndRenderRecords();
+    } else {
+        $('#login-container').css('display', 'flex');
+        $('#app-container').hide();
+    }
 });

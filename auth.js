@@ -4,7 +4,7 @@
  */
 
 const VaultAuth = (function () {
-    const API_BASE_URL = 'http://localhost:8089';
+    const API_BASE_URL = 'https://spring.visad.co.uk/api';
     const TOKEN_KEY = 'jwt_token';
     const USER_KEY = 'user_data';
 
@@ -85,7 +85,7 @@ const VaultAuth = (function () {
             console.error('Logout error:', error);
         } finally {
             clearToken();
-            window.location.href = 'index.html';
+            window.location.href = 'login.html';
         }
     }
 
@@ -104,12 +104,16 @@ const VaultAuth = (function () {
                 dataType: 'json'
             });
 
-            if (response.status === 'success' && response.data && response.data.authenticated) {
+            // Handle both 'authenticated' and 'loggedin' fields from backend
+            const isAuth = response.status === 'success' && response.data && (response.data.authenticated || response.data.loggedin);
+
+            if (isAuth) {
                 setUserData({
                     username: response.data.username,
                     role: response.data.role
                 });
-                return response.data;
+                // Normalize response to include authenticated property
+                return { ...response.data, authenticated: true };
             }
             return { authenticated: false };
         } catch (error) {
@@ -120,10 +124,12 @@ const VaultAuth = (function () {
     }
 
     // Make authenticated API call
-    async function apiCall(options) {
+    function apiCall(options) {
         const token = getToken();
         if (!token) {
-            throw new Error('Not authenticated');
+            // Return a rejected Deferred to be compatible with .fail()
+            // Simulating a jqXHR-like error structure
+            return $.Deferred().reject({ status: 401, statusText: 'Unauthorized' }, 'error', 'Not authenticated');
         }
 
         const defaultOptions = {
@@ -136,17 +142,23 @@ const VaultAuth = (function () {
 
     // Require authentication (redirect if not authenticated)
     async function requireAuth(requiredRole = null) {
+        // If we are already on login page, don't redirect loop
+        if (window.location.pathname.endsWith('login.html')) {
+            return;
+        }
+
         const session = await checkSession();
 
         if (!session.authenticated) {
-            alert('Please login first');
-            window.location.href = 'index.html';
+            // Optional: Store return URL to redirect back after login
+            // sessionStorage.setItem('returnUrl', window.location.href);
+            window.location.href = 'login.html';
             return false;
         }
 
         if (requiredRole && session.role !== requiredRole) {
             alert(`Access denied. ${requiredRole} role required.`);
-            window.location.href = 'index.html';
+            window.location.href = 'login.html';
             return false;
         }
 

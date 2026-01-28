@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VisaD Vault - Login</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="auth.js"></script>
+</head>
+
+<body>
+    <!-- Login Container -->
+    <div id="login-container">
+        <!-- Trail canvas for running stars -->
+        <canvas id="trail-canvas"></canvas>
+        <!-- Interactive canvas for mouse effect -->
+        <canvas id="star-canvas"></canvas>
+
+        <div class="login-wrapper">
+            <i class="fas fa-lock"></i>
+            <h2>VisaD Vault</h2>
+            <form id="login-form">
+                <div class="input-group">
+                    <input type="text" id="username" placeholder="Username" required>
+                    <i class="fas fa-user input-icon"></i>
+                </div>
+                <div class="input-group">
+                    <input type="password" id="password" placeholder="Password" required>
+                    <i class="fas fa-key input-icon"></i>
+                    <button type="button" id="password-toggle"><i class="fas fa-eye"></i></button>
+                </div>
+                <button type="submit">Login</button>
+                <div id="login-error" style="display: none;"></div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        $(document).ready(function () {
+            // Check if already authenticated
+            if (VaultAuth.isAuthenticated()) {
+                window.location.href = 'index.html';
+                return;
+            }
+
+            // Password toggle
+            $('#password-toggle').click(function () {
+                const passwordInput = $('#password');
+                const icon = $(this).find('i');
+                if (passwordInput.attr('type') === 'password') {
+                    passwordInput.attr('type', 'text');
+                    icon.removeClass('fa-eye').addClass('fa-eye-slash');
+                } else {
+                    passwordInput.attr('type', 'password');
+                    icon.removeClass('fa-eye-slash').addClass('fa-eye');
+                }
+            });
+
+            // Login form submission
+            $('#login-form').submit(async function (e) {
+                e.preventDefault();
+                const username = $('#username').val();
+                const password = $('#password').val();
+                const $btn = $(this).find('button[type="submit"]');
+                const $error = $('#login-error');
+
+                $btn.prop('disabled', true).text('Logging in...');
+                $error.hide();
+
+                const result = await VaultAuth.login(username, password);
+
+                if (result.success) {
+                    window.location.href = 'index.html';
+                } else {
+                    $error.text(result.message).fadeIn();
+                    $btn.prop('disabled', false).text('Login');
+                }
+            });
+        });
+    </script>
+</body>
+
+</html>
