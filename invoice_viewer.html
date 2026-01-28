@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -100,7 +101,8 @@
             border-bottom: 1px solid var(--border-color);
         }
 
-        .bill-to h3, .bill-from h3 {
+        .bill-to h3,
+        .bill-from h3 {
             font-size: 12px;
             text-transform: uppercase;
             letter-spacing: 1px;
@@ -238,7 +240,7 @@
             left: 0;
             right: 0;
             bottom: 0;
-            background: rgba(255,255,255,0.9);
+            background: rgba(255, 255, 255, 0.9);
             display: flex;
             justify-content: center;
             align-items: center;
@@ -254,19 +256,25 @@
         }
 
         @media print {
-            body { 
-                background: white; 
+            body {
+                background: white;
                 padding: 0;
             }
-            .invoice-container { 
-                box-shadow: none; 
-                padding: 0; 
+
+            .invoice-container {
+                box-shadow: none;
+                padding: 0;
                 max-width: 100%;
             }
-            .actions, .loading-overlay { display: none; }
+
+            .actions,
+            .loading-overlay {
+                display: none;
+            }
         }
     </style>
 </head>
+
 <body>
 
     <div id="loader" class="loading-overlay">
@@ -349,8 +357,12 @@
     </div>
 
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="auth.js"></script>
     <script>
-        $(document).ready(function() {
+        $(async function () {
+            const session = await VaultAuth.requireAuth();
+            if (!session) return;
+
             // Get params
             const urlParams = new URLSearchParams(window.location.search);
             const id = urlParams.get('id');
@@ -362,29 +374,28 @@
             }
 
             // Fetch invoice data
-            $.ajax({
-                url: `/api/invoices/${type}/${id}`,
-                method: 'GET',
-                success: function(response) {
-                    if (response.status === 'success' && response.data) {
-                        renderInvoice(response.data);
-                    } else {
-                        showError('Failed to load invoice data.');
-                    }
-                },
-                error: function(xhr) {
-                    showError('Error loading invoice: ' + xhr.statusText);
+            const url = VaultAuth.API_BASE_URL + `/invoices/${type}/${id}`;
+            VaultAuth.apiCall({
+                url: url,
+                method: 'GET'
+            }).done(function (response) {
+                if (response.status === 'success' && response.data) {
+                    renderInvoice(response.data);
+                } else {
+                    showError('Failed to load invoice data.');
                 }
+            }).fail(function (xhr) {
+                showError('Error loading invoice: ' + xhr.statusText);
             });
 
             function renderInvoice(data) {
                 // Customer Info
                 $('#customer-name').text(data.customer.name);
                 $('#customer-email').text(data.customer.email);
-                
+
                 const addr = [
-                    data.customer.addressLine1, 
-                    data.customer.city, 
+                    data.customer.addressLine1,
+                    data.customer.city,
                     data.customer.country
                 ].filter(Boolean).join(', ');
                 $('#customer-address').text(addr);
@@ -392,7 +403,7 @@
                 // Invoice Info
                 $('#invoice-number').text(data.invoiceNumber || `INV-${String(id).padStart(5, '0')}`);
                 $('#invoice-date').text(new Date().toLocaleDateString('en-GB'));
-                
+
                 // Status (Mock logic or from data if available)
                 const isPaid = data.totals.total === "0.00"; // Simple logic, or pass status from backend
                 // Actually payment status is in Traveler but maybe not exposed in plain DTO yet?
@@ -404,7 +415,7 @@
                 // Items
                 const tbody = $('#items-body');
                 tbody.empty();
-                
+
                 if (data.items && data.items.length > 0) {
                     data.items.forEach(item => {
                         const row = `
@@ -424,7 +435,7 @@
 
                 // Totals
                 $('#subtotal').text(`£${data.totals.subtotal}`);
-                
+
                 if (parseFloat(data.totals.discountAmount) > 0) {
                     $('#discount-row').show();
                     $('#discount').text(`-£${data.totals.discountAmount}`);
@@ -444,4 +455,5 @@
         });
     </script>
 </body>
+
 </html>

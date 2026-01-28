@@ -1,33 +1,41 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Document Upload - VisaD</title>
     <link rel="icon" type="image/png" href="https://www.visad.co.uk/wp-content/uploads/2025/08/visad-png.png">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"/>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
     <link rel="stylesheet" href="document_upload.css">
 </head>
+
 <body>
     <div class="container">
         <!-- Sticky Client Info Header -->
         <div class="client-info-header">
             <div class="client-info-main">
-                <img src="https://www.visad.co.uk/wp-content/uploads/2025/08/visad-png.png" alt="VisaD Logo" class="client-header-logo">
+                <img src="https://www.visad.co.uk/wp-content/uploads/2025/08/visad-png.png" alt="VisaD Logo"
+                    class="client-header-logo">
                 <div class="client-info-text">
                     <h2 id="client-name">Loading...</h2>
                     <p id="client-details">
-                        Applied for a <strong id="visa-country">-</strong> <strong id="visa-type">-</strong> visa in <strong id="application-city">-</strong> with our <strong id="package-type">-</strong> package
+                        Applied for a <strong id="visa-country">-</strong> <strong id="visa-type">-</strong> visa in
+                        <strong id="application-city">-</strong> with our <strong id="package-type">-</strong> package
                     </p>
                 </div>
             </div>
             <div class="action-buttons">
-                <button class="action-btn" data-action="locker-data"><i class="fas fa-database"></i> Locker Data</button>
+                <button class="action-btn" data-action="locker-data"><i class="fas fa-database"></i> Locker
+                    Data</button>
                 <button class="action-btn" data-action="insurance"><i class="fas fa-shield-alt"></i> Insurance</button>
                 <button class="action-btn" data-action="flight"><i class="fas fa-plane"></i> Flight</button>
-                <button class="action-btn" data-action="covering-letter"><i class="fas fa-file-alt"></i> Covering Letter</button>
-                <button class="action-btn" data-action="application-form"><i class="fas fa-clipboard-list"></i> Application Form</button>
-                <button class="action-btn" data-action="appointment"><i class="fas fa-calendar-check"></i> Appointment Confirmation</button>
+                <button class="action-btn" data-action="covering-letter"><i class="fas fa-file-alt"></i> Covering
+                    Letter</button>
+                <button class="action-btn" data-action="application-form"><i class="fas fa-clipboard-list"></i>
+                    Application Form</button>
+                <button class="action-btn" data-action="appointment"><i class="fas fa-calendar-check"></i> Appointment
+                    Confirmation</button>
                 <button class="action-btn" data-action="hotel"><i class="fas fa-hotel"></i> Hotel Booking</button>
             </div>
         </div>
@@ -70,7 +78,8 @@
                         </button>
                     </div>
                     <div class="upload-area" id="upload-insurance">
-                        <input type="file" id="file-insurance" class="file-input" accept=".pdf,.jpg,.jpeg,.png" multiple onchange="handleFileSelect(event, 'insurance')">
+                        <input type="file" id="file-insurance" class="file-input" accept=".pdf,.jpg,.jpeg,.png" multiple
+                            onchange="handleFileSelect(event, 'insurance')">
                         <label for="file-insurance" class="upload-label">
                             <i class="fas fa-cloud-upload-alt"></i>
                             <span>Drop files here or click to browse</span>
@@ -93,7 +102,8 @@
                         </button>
                     </div>
                     <div class="upload-area" id="upload-flight">
-                        <input type="file" id="file-flight" class="file-input" accept=".pdf,.jpg,.jpeg,.png" multiple onchange="handleFileSelect(event, 'flight')">
+                        <input type="file" id="file-flight" class="file-input" accept=".pdf,.jpg,.jpeg,.png" multiple
+                            onchange="handleFileSelect(event, 'flight')">
                         <label for="file-flight" class="upload-label">
                             <i class="fas fa-cloud-upload-alt"></i>
                             <span>Drop files here or click to browse</span>
@@ -116,7 +126,8 @@
                         </button>
                     </div>
                     <div class="upload-area" id="upload-application">
-                        <input type="file" id="file-application" class="file-input" accept=".pdf,.jpg,.jpeg,.png" multiple onchange="handleFileSelect(event, 'application')">
+                        <input type="file" id="file-application" class="file-input" accept=".pdf,.jpg,.jpeg,.png"
+                            multiple onchange="handleFileSelect(event, 'application')">
                         <label for="file-application" class="upload-label">
                             <i class="fas fa-cloud-upload-alt"></i>
                             <span>Drop files here or click to browse</span>
@@ -139,7 +150,8 @@
                         </button>
                     </div>
                     <div class="upload-area" id="upload-appointment">
-                        <input type="file" id="file-appointment" class="file-input" accept=".pdf,.jpg,.jpeg,.png" multiple onchange="handleFileSelect(event, 'appointment')">
+                        <input type="file" id="file-appointment" class="file-input" accept=".pdf,.jpg,.jpeg,.png"
+                            multiple onchange="handleFileSelect(event, 'appointment')">
                         <label for="file-appointment" class="upload-label">
                             <i class="fas fa-cloud-upload-alt"></i>
                             <span>Drop files here or click to browse</span>
@@ -162,7 +174,8 @@
                         </button>
                     </div>
                     <div class="upload-area" id="upload-hotel">
-                        <input type="file" id="file-hotel" class="file-input" accept=".pdf,.jpg,.jpeg,.png" multiple onchange="handleFileSelect(event, 'hotel')">
+                        <input type="file" id="file-hotel" class="file-input" accept=".pdf,.jpg,.jpeg,.png" multiple
+                            onchange="handleFileSelect(event, 'hotel')">
                         <label for="file-hotel" class="upload-label">
                             <i class="fas fa-cloud-upload-alt"></i>
                             <span>Drop files here or click to browse</span>
@@ -189,6 +202,8 @@
     </div>
 
     <script src="https://code.jquery.com/jquery-3.7.1.js"></script>
+    <script src="auth.js"></script>
     <script src="document_upload.js"></script>
 </body>
+
 </html>

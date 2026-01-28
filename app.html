@@ -1071,9 +1071,13 @@
     </div>
 
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="auth.js"></script>
     <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
     <script>
-        $(function () {
+        $(async function () {
+            // Check Authentication
+            const session = await VaultAuth.requireAuth();
+            if (!session) return;
             let allRecords = [];
             const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 
@@ -1233,18 +1237,30 @@
 
             // Load data
             window.loadData = function () {
-                $.get('api/travelers.php?action=read_all&limit=9999', function (res) {
-                    $.get('api/dependents.php?action=read_all&limit=9999', function (depRes) {
-                        const deps = depRes?.records || depRes?.data || (Array.isArray(depRes) ? depRes : []);
+                VaultAuth.apiCall({
+                    url: VaultAuth.API_BASE_URL + '/travelers?page=1&limit=9999&summary=false',
+                    method: 'GET'
+                }).done(function (res) {
+                    VaultAuth.apiCall({
+                        url: VaultAuth.API_BASE_URL + '/dependents?page=1&limit=9999',
+                        method: 'GET'
+                    }).done(function (depRes) {
+                        const deps = depRes.data || (Array.isArray(depRes) ? depRes : []);
                         const byTraveler = {};
                         deps.forEach(d => {
                             const tid = d.traveler_id || d.traveller_id || d.parent_id;
                             if (tid) (byTraveler[tid] = byTraveler[tid] || []).push(d);
                         });
                         process(res, byTraveler);
-                    }).fail(() => process(res, {}));
-                }, 'json').fail((x, s, e) => {
-                    $('#empty').html(`<div class="empty-icon"><i class="fas fa-exclamation-triangle"></i></div><p>Error: ${e}</p>`).show();
+                    }).fail(function () {
+                        process(res, {});
+                    });
+                }).fail(function (xhr, status, error) {
+                    if (xhr.status === 401 || xhr.status === 403) {
+                        VaultAuth.logout();
+                        return;
+                    }
+                    $('#empty').html(`<div class="empty-icon"><i class="fas fa-exclamation-triangle"></i></div><p>Error: ${error}</p>`).show();
                 });
             };
 

@@ -22,7 +22,10 @@ function snakeToCamelCase(str) {
     return str.replace(/_([a-z0-9])/g, (match, letter) => letter.toUpperCase());
 }
 
-$(document).ready(function () {
+$(async function () {
+    const session = await VaultAuth.requireAuth();
+    if (!session) return;
+
     const urlParams = new URLSearchParams(window.location.search);
     // Admin panel provides ID and Type
     const recordId = urlParams.get('id');
@@ -138,16 +141,14 @@ $(document).ready(function () {
     // $.get('api/auth.php?action=check_session', function (sessionRes) {
     //     if (sessionRes.loggedin) {
 
-    // 2. Fetch data from the admin endpoint (no auth check in dev mode)
-    // DEV MODE: Using Spring Boot REST API (Java backend)
-    // Spring Boot uses /api/travelers/{id} pattern, not PHP's travelers.php?action=get&id=X
-    const endpoint = recordType === 'traveler' ? `/api/travelers/${recordId}` : `/api/dependents/${recordId}`;
-    const requestUrl = endpoint;
+    // 2. Fetch data from the admin endpoint
+    const endpoint = recordType === 'traveler' ? `/travelers/${recordId}` : `/dependents/${recordId}`;
+    const requestUrl = VaultAuth.API_BASE_URL + endpoint;
 
     console.log(`API REQUEST: GET ${requestUrl} (No Payload)`);
     const apiStartTime = performance.now();
 
-    $.get(requestUrl, res => {
+    VaultAuth.apiCall({ url: requestUrl, method: 'GET' }).done(res => {
         const apiEndTime = performance.now();
         console.log(`API RESPONSE TIME: ${(apiEndTime - apiStartTime).toFixed(2)}ms`);
         console.log(`API SUCCESS: GET ${requestUrl}`, res);
@@ -368,7 +369,7 @@ $(document).ready(function () {
 
         // Fetch the main traveler using Spring Boot REST API
         // Spring Boot returns dependents as part of the traveler object
-        $.get(`/api/travelers/${mainTravelerId}`, function (mainRes) {
+        VaultAuth.apiCall({ url: VaultAuth.API_BASE_URL + `/travelers/${mainTravelerId}`, method: 'GET' }).done(function (mainRes) {
             console.log('Main traveler response:', mainRes);
             console.log('Main traveler ID from API:', mainRes.data?.id, 'Expected:', mainTravelerId);
 
@@ -699,37 +700,32 @@ $(document).ready(function () {
 
         const camelCaseField = snakeToCamelCase(field);
         const endpoint = recordType === 'traveler'
-            ? `/api/travelers/${recordId}/bulk`
-            : `/api/dependents/${recordId}/bulk`;
+            ? `/travelers/${recordId}`
+            : `/dependents/${recordId}`;
+        const url = VaultAuth.API_BASE_URL + endpoint;
 
         console.log(`🔄 Updating question field: ${field} (${camelCaseField}) = "${value}"`);
 
-        $.ajax({
-            url: endpoint,
-            type: 'PATCH',
-            contentType: 'application/json',
+        VaultAuth.apiCall({
+            url: url,
+            method: 'PATCH',
             data: JSON.stringify({
-                updates: {
-                    [camelCaseField]: value
-                }
-            }),
-            dataType: 'json',
-            success: function (res) {
-                console.log('✅ Update successful:', res);
-                if (res.status === 'success') {
-                    if (onSuccess) onSuccess();
-                } else {
-                    alert('Error updating field: ' + (res.message || 'Unknown error'));
-                }
-            },
-            error: function (xhr, status, error) {
-                console.error('❌ Server error:', {
-                    status: xhr.status,
-                    statusText: xhr.statusText,
-                    responseText: xhr.responseText
-                });
-                alert('Server error while saving. Please check connection.');
+                [camelCaseField]: value
+            })
+        }).done(function (res) {
+            console.log('✅ Update successful:', res);
+            if (res.status === 'success') {
+                if (onSuccess) onSuccess();
+            } else {
+                alert('Error updating field: ' + (res.message || 'Unknown error'));
             }
+        }).fail(function (xhr, status, error) {
+            console.error('❌ Server error:', {
+                status: xhr.status,
+                statusText: xhr.statusText,
+                responseText: xhr.responseText
+            });
+            alert('Server error while saving. Please check connection.');
         });
     }
 
@@ -765,50 +761,45 @@ $(document).ready(function () {
         badgeHeader.css('pointer-events', 'none').css('opacity', '0.6');
         $toggleCheckbox.prop('disabled', true);
 
-        // Use the bulk update API to update the formComplete field
+        // Use the API to update the formComplete field
         const endpoint = recordType === 'traveler'
-            ? `/api/travelers/${recordId}/bulk`
-            : `/api/dependents/${recordId}/bulk`;
+            ? `/travelers/${recordId}`
+            : `/dependents/${recordId}`;
+        const url = VaultAuth.API_BASE_URL + endpoint;
 
-        console.log(`🔒 Toggling lock status to: ${newLockState} via ${endpoint}`);
+        console.log(`🔒 Toggling lock status to: ${newLockState} via ${url}`);
 
-        $.ajax({
-            url: endpoint,
-            type: 'PATCH',
-            contentType: 'application/json',
+        VaultAuth.apiCall({
+            url: url,
+            method: 'PATCH',
             data: JSON.stringify({
-                updates: {
-                    formComplete: newLockState
-                }
-            }),
-            dataType: 'json',
-            success: function (res) {
-                console.log('✅ Lock status updated:', res);
-                if (res.status === 'success') {
-                    isFormLocked = newLockState == 1; // Update state
-                    window.isFormLocked = isFormLocked; // Keep window reference updated
-                    recordData.questions.form_complete = newLockState; // Update local data
-                    updateLockUI();
-                } else {
-                    alert('Error updating lock status: ' + (res.message || 'Unknown error'));
-                    // Revert UI if needed (updateLockUI will fix it)
-                }
-            },
-            error: function (xhr, status, error) {
-                console.error('❌ Server error updating lock status:', {
-                    status: xhr.status,
-                    statusText: xhr.statusText,
-                    responseText: xhr.responseText
-                });
-                alert('Server error while updating lock status.');
-            },
-            complete: function () {
-                badgeHeader.css('pointer-events', 'auto').css('opacity', '1');
-                $toggleCheckbox.prop('disabled', false);
-                updateLockUI(); // Ensure UI is correct even on fail
+                formComplete: newLockState
+            })
+        }).done(function (res) {
+            console.log('✅ Lock status updated:', res);
+            if (res.status === 'success') {
+                isFormLocked = newLockState == 1; // Update state
+                window.isFormLocked = isFormLocked; // Keep window reference updated
+                recordData.questions.form_complete = newLockState; // Update local data
+                updateLockUI();
+            } else {
+                alert('Error updating lock status: ' + (res.message || 'Unknown error'));
+                // Revert UI if needed (updateLockUI will fix it)
             }
+        }).fail(function (xhr, status, error) {
+            console.error('❌ Server error updating lock status:', {
+                status: xhr.status,
+                statusText: xhr.statusText,
+                responseText: xhr.responseText
+            });
+            alert('Server error while updating lock status.');
+        }).always(function () {
+            badgeHeader.css('pointer-events', 'auto').css('opacity', '1');
+            $toggleCheckbox.prop('disabled', false);
+            updateLockUI(); // Ensure UI is correct even on fail
         });
     }
+
 
     function updateLockUI() {
         const badgeHeader = $('#form-status-badge-header');
@@ -3741,7 +3732,7 @@ $(document).ready(function () {
     function setupStickyHeader() {
         const $nav = $('.horizontal-nav');
         let ticking = false;
-
+    
         $(window).on('scroll', function () {
             if (!ticking) {
                 window.requestAnimationFrame(function () {

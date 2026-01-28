@@ -1,18 +1,18 @@
 console.oog("This is the document upload page");
-$(document).ready(function() {
+$(document).ready(function () {
     // Get URL parameters
     const urlParams = new URLSearchParams(window.location.search);
     const recordId = urlParams.get('id');
     const recordType = urlParams.get('type');
-    
+
     let clientData = {
         personal: {},
         questions: {}
     };
-    
+
     // Document categories
     const categories = ['insurance', 'flight', 'application', 'appointment', 'hotel'];
-    
+
     // Store uploaded files per category
     let categoryFiles = {
         insurance: [],
@@ -21,57 +21,59 @@ $(document).ready(function() {
         appointment: [],
         hotel: []
     };
-    
+
     // Maximum file size (2MB)
     const MAX_FILE_SIZE = 2 * 1024 * 1024;
-    
+
     // Check if required parameters are present
     if (!recordId || !recordType) {
         showError('Missing required parameters. Please access this page from the client form viewer.');
         return;
     }
-    
+
     // Load client data
     loadClientData();
-    
-    function loadClientData() {
-        // Check session first
-        $.get('api/auth.php?action=check_session', function(sessionRes) {
-            if (sessionRes.loggedin) {
-                // Fetch client data
-                const endpoint = recordType === 'traveler' ? 'api/travelers.php' : 'api/dependents.php';
-                $.get(`${endpoint}?action=get_form_data&id=${recordId}`, function(res) {
-                    if (res.status === 'success' && res.data) {
-                        processClientData(res.data);
-                        loadExistingDocuments();
-                        showDocumentsSection();
-                    } else {
-                        showError(res.message || 'Failed to load client data.');
-                    }
-                }, 'json').fail(function() {
-                    showError('Server request failed. Please try again.');
-                });
+
+    async function loadClientData() {
+        const session = await VaultAuth.requireAuth();
+        if (!session) return;
+
+        const endpoint = recordType === 'traveler' ? `/travelers/${recordId}` : `/dependents/${recordId}`;
+        const url = VaultAuth.API_BASE_URL + endpoint;
+
+        VaultAuth.apiCall({
+            url: url,
+            method: 'GET'
+        }).done(function (res) {
+            if (res.status === 'success' && res.data) {
+                let flatData = { ...res.data };
+                if (flatData.questions) {
+                    flatData = { ...flatData, ...flatData.questions };
+                }
+                processClientData(flatData);
+                loadExistingDocuments();
+                showDocumentsSection();
             } else {
-                showError('Access Denied. Please log in to the VisaD Vault.');
+                showError(res.message || 'Failed to load client data.');
             }
-        }, 'json').fail(function() {
-            showError('Authentication check failed.');
+        }).fail(function () {
+            showError('Server request failed. Please try again.');
         });
     }
-    
+
     function processClientData(flatData) {
         // Personal fields
         const personalFieldKeys = [
             'first_name', 'last_name', 'dob', 'nationality', 'passport_no',
             'travel_country', 'visa_type', 'visa_center', 'package'
         ];
-        
+
         personalFieldKeys.forEach(key => {
             if (flatData[key] !== undefined) {
                 clientData.personal[key] = flatData[key];
             }
         });
-        
+
         // Update header with client info
         const fullName = ((clientData.personal.first_name || '') + ' ' + (clientData.personal.last_name || '')).trim();
         $('#client-name').text(fullName || 'Client Name');
@@ -80,18 +82,18 @@ $(document).ready(function() {
         $('#application-city').text(clientData.personal.visa_center || '-');
         $('#package-type').text(clientData.personal.package || '-');
     }
-    
+
     function loadExistingDocuments() {
         // Load existing documents from server for each category
         let loadedCount = 0;
         categories.forEach(category => {
-            $.get(`api/documents.php?action=get_documents&id=${recordId}&type=${recordType}&category=${category}`, function(res) {
+            $.get(`api/documents.php?action=get_documents&id=${recordId}&type=${recordType}&category=${category}`, function (res) {
                 if (res.status === 'success' && res.documents) {
                     categoryFiles[category] = res.documents;
                     renderFiles(category);
                 }
                 loadedCount++;
-                
+
                 // Update all button states after all categories are loaded
                 if (loadedCount === categories.length) {
                     updateAllButtonStates();
@@ -99,35 +101,35 @@ $(document).ready(function() {
             }, 'json');
         });
     }
-    
+
     function showDocumentsSection() {
         $('#loading-state').hide();
         $('#documents-section').show();
     }
-    
+
     function showError(message) {
         $('#loading-state').hide();
         $('#error-message').text(message);
         $('#error-state').show();
     }
-    
+
     // Trigger file upload
-    window.triggerUpload = function(category) {
+    window.triggerUpload = function (category) {
         $(`#file-${category}`).click();
     };
-    
+
     // Handle file selection
-    window.handleFileSelect = function(event, category) {
+    window.handleFileSelect = function (event, category) {
         const files = event.target.files;
         uploadFiles(files, category);
         // Reset input
         event.target.value = '';
     };
-    
+
     function uploadFiles(files, category) {
         const validFiles = [];
         const errors = [];
-        
+
         // Validate files
         Array.from(files).forEach(file => {
             // Check file size
@@ -135,22 +137,22 @@ $(document).ready(function() {
                 errors.push(`${file.name} exceeds 2MB limit`);
                 return;
             }
-            
+
             // Check file type
             const allowedTypes = ['application/pdf', 'image/jpeg', 'image/jpg', 'image/png'];
             if (!allowedTypes.includes(file.type)) {
                 errors.push(`${file.name} has invalid file type`);
                 return;
             }
-            
+
             validFiles.push(file);
         });
-        
+
         // Show errors if any
         if (errors.length > 0) {
             alert('Upload Errors:\n' + errors.join('\n'));
         }
-        
+
         // Upload valid files
         if (validFiles.length > 0) {
             validFiles.forEach(file => {
@@ -158,50 +160,50 @@ $(document).ready(function() {
             });
         }
     }
-    
+
     function uploadSingleFile(file, category) {
         const formData = new FormData();
         formData.append('file', file);
         formData.append('id', recordId);
         formData.append('type', recordType);
         formData.append('category', category);
-        
+
         // Show upload progress (you can add a progress indicator here)
-        
+
         $.ajax({
             url: 'api/documents.php?action=upload',
             type: 'POST',
             data: formData,
             processData: false,
             contentType: false,
-            success: function(res) {
+            success: function (res) {
                 if (res.status === 'success') {
                     // Add file to category
                     categoryFiles[category].push(res.file);
                     renderFiles(category);
-                    
+
                     // Show success message
                     showNotification('File uploaded successfully!', 'success');
                 } else {
                     showNotification('Upload failed: ' + res.message, 'error');
                 }
             },
-            error: function() {
+            error: function () {
                 showNotification('Upload failed. Please try again.', 'error');
             }
         });
     }
-    
+
     function renderFiles(category) {
         const files = categoryFiles[category];
         const container = $(`#files-${category}`);
-        
+
         // Update file count
         $(`#count-${category}`).text(`${files.length} file${files.length !== 1 ? 's' : ''}`);
-        
+
         // Update navigation button state
         updateNavigationButtonState(category, files.length);
-        
+
         if (files.length === 0) {
             container.html(`
                 <div class="empty-state">
@@ -211,17 +213,17 @@ $(document).ready(function() {
             `);
             return;
         }
-        
+
         let html = '';
         files.forEach((file, index) => {
             const fileExtension = file.name.split('.').pop().toLowerCase();
             const isPdf = fileExtension === 'pdf';
             const isImage = ['jpg', 'jpeg', 'png'].includes(fileExtension);
-            
+
             const iconClass = isPdf ? 'fa-file-pdf pdf' : isImage ? 'fa-file-image image' : 'fa-file';
             const fileSize = formatFileSize(file.size);
             const uploadDate = formatDate(file.uploaded_at);
-            
+
             html += `
                 <div class="file-item" data-file-id="${file.id}">
                     <div class="file-info">
@@ -242,10 +244,10 @@ $(document).ready(function() {
                 </div>
             `;
         });
-        
+
         container.html(html);
     }
-    
+
     function updateNavigationButtonState(category, fileCount) {
         // Map category names to button data-action values
         const categoryToAction = {
@@ -255,7 +257,7 @@ $(document).ready(function() {
             'appointment': 'appointment',
             'hotel': 'hotel'
         };
-        
+
         const action = categoryToAction[category];
         if (action) {
             const button = $(`.action-btn[data-action="${action}"]`);
@@ -266,7 +268,7 @@ $(document).ready(function() {
             }
         }
     }
-    
+
     function updateAllButtonStates() {
         // Update all button states on initial load
         categories.forEach(category => {
@@ -274,49 +276,49 @@ $(document).ready(function() {
             updateNavigationButtonState(category, fileCount);
         });
     }
-    
+
     // View file
-    window.viewFile = function(category, index) {
+    window.viewFile = function (category, index) {
         const file = categoryFiles[category][index];
         if (file && file.url) {
             window.open(file.url, '_blank');
         }
     };
-    
+
     // Confirm delete
     let deleteCallback = null;
-    window.confirmDelete = function(category, index) {
+    window.confirmDelete = function (category, index) {
         const file = categoryFiles[category][index];
         $('#delete-filename').text(file.name);
         $('#delete-modal').fadeIn(300);
-        
-        deleteCallback = function() {
+
+        deleteCallback = function () {
             deleteFile(category, index);
         };
     };
-    
-    $('#delete-cancel').on('click', function() {
+
+    $('#delete-cancel').on('click', function () {
         $('#delete-modal').fadeOut(300);
         deleteCallback = null;
     });
-    
-    $('#delete-confirm').on('click', function() {
+
+    $('#delete-confirm').on('click', function () {
         if (deleteCallback) {
             deleteCallback();
             $('#delete-modal').fadeOut(300);
             deleteCallback = null;
         }
     });
-    
+
     function deleteFile(category, index) {
         const file = categoryFiles[category][index];
-        
+
         $.post('api/documents.php?action=delete', {
             id: recordId,
             type: recordType,
             file_id: file.id,
             category: category
-        }, function(res) {
+        }, function (res) {
             if (res.status === 'success') {
                 // Remove from array
                 categoryFiles[category].splice(index, 1);
@@ -325,46 +327,46 @@ $(document).ready(function() {
             } else {
                 showNotification('Delete failed: ' + res.message, 'error');
             }
-        }, 'json').fail(function() {
+        }, 'json').fail(function () {
             showNotification('Delete failed. Please try again.', 'error');
         });
     }
-    
+
     // Drag and drop functionality
     categories.forEach(category => {
         const uploadArea = $(`#upload-${category}`)[0];
-        
+
         ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
             uploadArea.addEventListener(eventName, preventDefaults, false);
         });
-        
+
         function preventDefaults(e) {
             e.preventDefault();
             e.stopPropagation();
         }
-        
+
         ['dragenter', 'dragover'].forEach(eventName => {
             uploadArea.addEventListener(eventName, () => {
                 $(uploadArea).addClass('dragover');
             }, false);
         });
-        
+
         ['dragleave', 'drop'].forEach(eventName => {
             uploadArea.addEventListener(eventName, () => {
                 $(uploadArea).removeClass('dragover');
             }, false);
         });
-        
-        uploadArea.addEventListener('drop', function(e) {
+
+        uploadArea.addEventListener('drop', function (e) {
             const files = e.dataTransfer.files;
             uploadFiles(files, category);
         }, false);
     });
-    
+
     // Navigation buttons
-    $('.action-btn').on('click', function() {
+    $('.action-btn').on('click', function () {
         const action = $(this).data('action');
-        
+
         if (action === 'locker-data') {
             window.location.href = `form_data_viewer.html?id=${recordId}&type=${recordType}`;
         } else if (action === 'covering-letter') {
@@ -379,9 +381,9 @@ $(document).ready(function() {
             }
         }
     });
-    
+
     // Sticky header scroll effect
-    $(window).on('scroll', function() {
+    $(window).on('scroll', function () {
         const scrollTop = $(window).scrollTop();
         if (scrollTop > 50) {
             $('.client-info-header').addClass('scrolled');
@@ -389,7 +391,7 @@ $(document).ready(function() {
             $('.client-info-header').removeClass('scrolled');
         }
     });
-    
+
     // Helper functions
     function formatFileSize(bytes) {
         if (bytes === 0) return '0 Bytes';
@@ -398,21 +400,21 @@ $(document).ready(function() {
         const i = Math.floor(Math.log(bytes) / Math.log(k));
         return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
     }
-    
+
     function formatDate(dateString) {
         if (!dateString) return 'Unknown';
         const date = new Date(dateString);
         const now = new Date();
         const diffTime = Math.abs(now - date);
         const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-        
+
         if (diffDays === 0) return 'Today';
         if (diffDays === 1) return 'Yesterday';
         if (diffDays < 7) return `${diffDays} days ago`;
-        
+
         return date.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
     }
-    
+
     function escapeHtml(text) {
         const map = {
             '&': '&amp;',
@@ -423,7 +425,7 @@ $(document).ready(function() {
         };
         return text.replace(/[&<>"']/g, m => map[m]);
     }
-    
+
     function showNotification(message, type) {
         // Simple notification (you can enhance this with a toast library)
         const bgColor = type === 'success' ? '#10b981' : '#ef4444';
@@ -444,11 +446,11 @@ $(document).ready(function() {
                 ${message}
             </div>
         `);
-        
+
         $('body').append(notification);
-        
+
         setTimeout(() => {
-            notification.fadeOut(300, function() {
+            notification.fadeOut(300, function () {
                 $(this).remove();
             });
         }, 3000);

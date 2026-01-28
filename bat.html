@@ -1,268 +1,1430 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=1400">
     <title>BAT - Booked Appointments Tracker</title>
     <link rel="icon" type="image/png" href="favicon.png">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"/>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
-        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
         :root {
-            --bg-main: #fafbfc; --bg-header: #475569; --bg-row-green: #f8fdf9; --bg-row-blue: #f8fafd;
-            --bg-row-red: #fdfafa; --bg-row-yellow: #fdfcf8; --bg-row-grey: #f9fafb;
-            --text-primary: #4b5563; --text-secondary: #6b7280; --text-muted: #9ca3af;
-            --border-color: #e5e7eb; --border-light: #f3f4f6; --group-border: #cbd5e1; --group-bg: #f8fafc;
+            --bg-main: #fafbfc;
+            --bg-header: #475569;
+            --bg-row-green: #f8fdf9;
+            --bg-row-blue: #f8fafd;
+            --bg-row-red: #fdfafa;
+            --bg-row-yellow: #fdfcf8;
+            --bg-row-grey: #f9fafb;
+            --text-primary: #4b5563;
+            --text-secondary: #6b7280;
+            --text-muted: #9ca3af;
+            --border-color: #e5e7eb;
+            --border-light: #f3f4f6;
+            --group-border: #cbd5e1;
+            --group-bg: #f8fafc;
         }
-        html { height: 100%; }
-        body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg-main); color: var(--text-primary); font-size: 14px; line-height: 1.5; min-height: 100%; }
+
+        html {
+            height: 100%;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, sans-serif;
+            background: var(--bg-main);
+            color: var(--text-primary);
+            font-size: 14px;
+            line-height: 1.5;
+            min-height: 100%;
+        }
+
         body.dark-theme {
-            --bg-main: #1e2228; --bg-header: #262b33; --bg-row-green: #1e2e24; --bg-row-blue: #1e2530;
-            --bg-row-red: #2e2224; --bg-row-yellow: #2e2a1e; --bg-row-grey: #262a30;
-            --text-primary: #f5f7fa; --text-secondary: #d0d7e0; --text-muted: #a0a8b4;
-            --border-color: #3a424d; --border-light: #323a44; --group-border: #4a5460; --group-bg: #262c35;
+            --bg-main: #1e2228;
+            --bg-header: #262b33;
+            --bg-row-green: #1e2e24;
+            --bg-row-blue: #1e2530;
+            --bg-row-red: #2e2224;
+            --bg-row-yellow: #2e2a1e;
+            --bg-row-grey: #262a30;
+            --text-primary: #f5f7fa;
+            --text-secondary: #d0d7e0;
+            --text-muted: #a0a8b4;
+            --border-color: #3a424d;
+            --border-light: #323a44;
+            --group-border: #4a5460;
+            --group-bg: #262c35;
         }
-        body.dark-theme tbody tr { color: var(--text-primary); }
-        body.dark-theme tbody tr td { border-bottom-color: var(--border-light); color: var(--text-primary); }
-        body.dark-theme tbody tr .name { color: var(--text-primary); font-weight: 600; }
-        body.dark-theme tbody tr .agent { color: var(--text-secondary); }
-        body.dark-theme tbody tr .notes-text, body.dark-theme tbody tr .progress-text { color: var(--text-primary); }
-        body.dark-theme tbody tr .whatsapp-link, body.dark-theme tbody tr .whatsapp-link i { color: #6ee7b7; }
-        body.dark-theme tr.green { background: #1e3528; border-left: 3px solid #6ee7b7; }
-        body.dark-theme tr.green td { background: #1e3528; }
-        body.dark-theme tr.blue { background: #1e2a40; border-left: 3px solid #7dd3fc; }
-        body.dark-theme tr.blue td { background: #1e2a40; }
-        body.dark-theme tr.red { background: #3d2428; border-left: 3px solid #fca5a5; }
-        body.dark-theme tr.red td { background: #3d2428; }
-        body.dark-theme tr.yellow { background: #3d3520; border-left: 3px solid #fde047; }
-        body.dark-theme tr.yellow td { background: #3d3520; }
-        body.dark-theme tr.grey { background: #2a3038; border-left: 3px solid #cbd5e1; }
-        body.dark-theme tr.grey td { background: #2a3038; }
-        .header { background: var(--bg-header); padding: 12px 16px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 200; }
-        .header-left { display: flex; align-items: center; gap: 12px; }
-        .header h1 { color: #fff; font-size: 18px; font-weight: 600; }
-        .header-btn { background: rgba(255,255,255,0.1); border: none; color: #fff; padding: 8px 14px; border-radius: 4px; cursor: pointer; font-size: 13px; display: flex; align-items: center; gap: 6px; transition: background 0.2s; }
-        .header-btn:hover { background: rgba(255,255,255,0.2); }
-        .header-actions { display: flex; gap: 8px; }
-        .tabs-container { background: var(--bg-main); border-bottom: 1px solid var(--border-color); display: flex; align-items: center; padding: 0 8px; overflow-x: auto; position: sticky; top: 86px; z-index: 140; }
-        body.dark-theme .tabs-container { background: var(--bg-header); }
-        body.dark-theme .stats-bar { background: var(--bg-main); }
-        .tab { padding: 12px 16px; background: none; border: none; cursor: pointer; font-size: 14px; font-weight: 500; color: var(--text-secondary); border-bottom: 2px solid transparent; white-space: nowrap; transition: all 0.2s; }
-        .tab:hover { color: var(--text-primary); background: rgba(0,0,0,0.03); }
-        .tab.active { color: #2563eb; border-bottom-color: #2563eb; }
-        #month-tabs { display: flex; align-items: center; gap: 0; }
-        .stats-bar { padding: 10px 16px; display: flex; gap: 20px; font-size: 14px; border-bottom: 1px solid var(--border-light); background: var(--bg-main); position: sticky; top: 50px; z-index: 150; align-items: center; flex-wrap: wrap; }
-        .stat { display: flex; gap: 6px; }
-        .stat-label { color: var(--text-muted); }
-        .stat-value { font-weight: 600; }
-        .stat-value.green { color: #16a34a; }
-        .stat-value.blue { color: #2563eb; }
-        .stat-separator { width: 1px; height: 20px; background: var(--border-color); margin: 0 8px; }
-        .assigned-stats { display: flex; gap: 0; flex-wrap: wrap; align-items: center; }
-        .assigned-user { display: inline-flex; gap: 4px; align-items: center; }
-        .assigned-user .user-name { color: var(--text-primary); font-size: 13px; font-weight: 500; }
-        .assigned-user .user-count { font-weight: 600; color: #8b5cf6; font-size: 13px; }
-        .assigned-separator { color: var(--text-muted); margin-right: 8px; }
-        body.dark-theme .assigned-user .user-count { color: #a78bfa; }
-        .stat.uk-time { margin-left: auto; }
-        .stat.uk-time .stat-value { font-family: 'JetBrains Mono', monospace; color: #3b82f6; }
-        .table-wrapper { overflow-x: auto; background: var(--bg-main); padding: 0 8px; }
-        table { width: 100%; border-collapse: separate; border-spacing: 0; min-width: 1430px; table-layout: fixed; }
-        thead { background: var(--bg-main); }
-        thead th { background: var(--bg-main); }
-        body.dark-theme thead, body.dark-theme thead th { background: var(--bg-header); color: var(--text-secondary); }
-        th { padding: 12px 10px; text-align: left; font-weight: 600; font-size: 11px; color: var(--text-muted); border-bottom: 1px solid var(--border-color); text-transform: uppercase; letter-spacing: 0.5px; }
-        th:nth-child(1), td:nth-child(1) { width: 70px; text-align: center; }
-        th:nth-child(2), td:nth-child(2) { width: 85px; }
-        th:nth-child(3), td:nth-child(3) { width: 180px; }
-        th:nth-child(4), td:nth-child(4) { width: 100px; }
-        th:nth-child(5), td:nth-child(5) { width: 220px; }
-        th:nth-child(6), td:nth-child(6) { width: 105px; }
-        th:nth-child(7), td:nth-child(7) { width: 90px; }
-        th:nth-child(8), td:nth-child(8) { width: 80px; }
-        th:nth-child(9), td:nth-child(9) { width: 105px; }
-        th:nth-child(10), td:nth-child(10) { width: 110px; }
-        th:nth-child(11), td:nth-child(11) { width: 75px; }
-        th:nth-child(12), td:nth-child(12) { width: 180px; }
-        td { padding: 10px; border-bottom: 1px solid var(--border-light); vertical-align: middle; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; color: var(--text-primary); }
-        td:first-child { text-align: center; color: var(--text-muted); font-size: 12px; font-weight: 700; }
-        .number-cell { display: inline-flex; align-items: center; justify-content: center; gap: 4px; width: 100%; }
-        .toggle-spacer { width: 20px; display: inline-block; }
-        td:nth-child(3) { font-weight: 600; }
-        td:nth-child(11), td:nth-child(5) { white-space: normal; word-break: break-word; }
+
+        body.dark-theme tbody tr {
+            color: var(--text-primary);
+        }
+
+        body.dark-theme tbody tr td {
+            border-bottom-color: var(--border-light);
+            color: var(--text-primary);
+        }
+
+        body.dark-theme tbody tr .name {
+            color: var(--text-primary);
+            font-weight: 600;
+        }
+
+        body.dark-theme tbody tr .agent {
+            color: var(--text-secondary);
+        }
+
+        body.dark-theme tbody tr .notes-text,
+        body.dark-theme tbody tr .progress-text {
+            color: var(--text-primary);
+        }
+
+        body.dark-theme tbody tr .whatsapp-link,
+        body.dark-theme tbody tr .whatsapp-link i {
+            color: #6ee7b7;
+        }
+
+        body.dark-theme tr.green {
+            background: #1e3528;
+            border-left: 3px solid #6ee7b7;
+        }
+
+        body.dark-theme tr.green td {
+            background: #1e3528;
+        }
+
+        body.dark-theme tr.blue {
+            background: #1e2a40;
+            border-left: 3px solid #7dd3fc;
+        }
+
+        body.dark-theme tr.blue td {
+            background: #1e2a40;
+        }
+
+        body.dark-theme tr.red {
+            background: #3d2428;
+            border-left: 3px solid #fca5a5;
+        }
+
+        body.dark-theme tr.red td {
+            background: #3d2428;
+        }
+
+        body.dark-theme tr.yellow {
+            background: #3d3520;
+            border-left: 3px solid #fde047;
+        }
+
+        body.dark-theme tr.yellow td {
+            background: #3d3520;
+        }
+
+        body.dark-theme tr.grey {
+            background: #2a3038;
+            border-left: 3px solid #cbd5e1;
+        }
+
+        body.dark-theme tr.grey td {
+            background: #2a3038;
+        }
+
+        .header {
+            background: var(--bg-header);
+            padding: 12px 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 200;
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .header h1 {
+            color: #fff;
+            font-size: 18px;
+            font-weight: 600;
+        }
+
+        .header-btn {
+            background: rgba(255, 255, 255, 0.1);
+            border: none;
+            color: #fff;
+            padding: 8px 14px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 13px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: background 0.2s;
+        }
+
+        .header-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .tabs-container {
+            background: var(--bg-main);
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            padding: 0 8px;
+            overflow-x: auto;
+            position: sticky;
+            top: 86px;
+            z-index: 140;
+        }
+
+        body.dark-theme .tabs-container {
+            background: var(--bg-header);
+        }
+
+        body.dark-theme .stats-bar {
+            background: var(--bg-main);
+        }
+
+        .tab {
+            padding: 12px 16px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--text-secondary);
+            border-bottom: 2px solid transparent;
+            white-space: nowrap;
+            transition: all 0.2s;
+        }
+
+        .tab:hover {
+            color: var(--text-primary);
+            background: rgba(0, 0, 0, 0.03);
+        }
+
+        .tab.active {
+            color: #2563eb;
+            border-bottom-color: #2563eb;
+        }
+
+        #month-tabs {
+            display: flex;
+            align-items: center;
+            gap: 0;
+        }
+
+        .stats-bar {
+            padding: 10px 16px;
+            display: flex;
+            gap: 20px;
+            font-size: 14px;
+            border-bottom: 1px solid var(--border-light);
+            background: var(--bg-main);
+            position: sticky;
+            top: 50px;
+            z-index: 150;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .stat {
+            display: flex;
+            gap: 6px;
+        }
+
+        .stat-label {
+            color: var(--text-muted);
+        }
+
+        .stat-value {
+            font-weight: 600;
+        }
+
+        .stat-value.green {
+            color: #16a34a;
+        }
+
+        .stat-value.blue {
+            color: #2563eb;
+        }
+
+        .stat-separator {
+            width: 1px;
+            height: 20px;
+            background: var(--border-color);
+            margin: 0 8px;
+        }
+
+        .assigned-stats {
+            display: flex;
+            gap: 0;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .assigned-user {
+            display: inline-flex;
+            gap: 4px;
+            align-items: center;
+        }
+
+        .assigned-user .user-name {
+            color: var(--text-primary);
+            font-size: 13px;
+            font-weight: 500;
+        }
+
+        .assigned-user .user-count {
+            font-weight: 600;
+            color: #8b5cf6;
+            font-size: 13px;
+        }
+
+        .assigned-separator {
+            color: var(--text-muted);
+            margin-right: 8px;
+        }
+
+        body.dark-theme .assigned-user .user-count {
+            color: #a78bfa;
+        }
+
+        .stat.uk-time {
+            margin-left: auto;
+        }
+
+        .stat.uk-time .stat-value {
+            font-family: 'JetBrains Mono', monospace;
+            color: #3b82f6;
+        }
+
+        .table-wrapper {
+            overflow-x: auto;
+            background: var(--bg-main);
+            padding: 0 8px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            min-width: 1430px;
+            table-layout: fixed;
+        }
+
+        thead {
+            background: var(--bg-main);
+        }
+
+        thead th {
+            background: var(--bg-main);
+        }
+
+        body.dark-theme thead,
+        body.dark-theme thead th {
+            background: var(--bg-header);
+            color: var(--text-secondary);
+        }
+
+        th {
+            padding: 12px 10px;
+            text-align: left;
+            font-weight: 600;
+            font-size: 11px;
+            color: var(--text-muted);
+            border-bottom: 1px solid var(--border-color);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        th:nth-child(1),
+        td:nth-child(1) {
+            width: 70px;
+            text-align: center;
+        }
+
+        th:nth-child(2),
+        td:nth-child(2) {
+            width: 85px;
+        }
+
+        th:nth-child(3),
+        td:nth-child(3) {
+            width: 180px;
+        }
+
+        th:nth-child(4),
+        td:nth-child(4) {
+            width: 100px;
+        }
+
+        th:nth-child(5),
+        td:nth-child(5) {
+            width: 220px;
+        }
+
+        th:nth-child(6),
+        td:nth-child(6) {
+            width: 105px;
+        }
+
+        th:nth-child(7),
+        td:nth-child(7) {
+            width: 90px;
+        }
+
+        th:nth-child(8),
+        td:nth-child(8) {
+            width: 80px;
+        }
+
+        th:nth-child(9),
+        td:nth-child(9) {
+            width: 105px;
+        }
+
+        th:nth-child(10),
+        td:nth-child(10) {
+            width: 110px;
+        }
+
+        th:nth-child(11),
+        td:nth-child(11) {
+            width: 75px;
+        }
+
+        th:nth-child(12),
+        td:nth-child(12) {
+            width: 180px;
+        }
+
+        td {
+            padding: 10px;
+            border-bottom: 1px solid var(--border-light);
+            vertical-align: middle;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            font-size: 13px;
+            color: var(--text-primary);
+        }
+
+        td:first-child {
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 12px;
+            font-weight: 700;
+        }
+
+        .number-cell {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+            width: 100%;
+        }
+
+        .toggle-spacer {
+            width: 20px;
+            display: inline-block;
+        }
+
+        td:nth-child(3) {
+            font-weight: 600;
+        }
+
+        td:nth-child(11),
+        td:nth-child(5) {
+            white-space: normal;
+            word-break: break-word;
+        }
+
         /* Group Styles */
-        .group-container { margin: 8px 0; border-radius: 12px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.08); border: 1px solid var(--group-border); background: var(--group-bg); }
-        .group-container.single-traveler { border-radius: 8px; margin: 4px 0; }
-        .group-container table { margin: 0; min-width: 100%; }
-        .group-header { background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%); position: relative; }
-        .group-header td { padding: 12px 10px; border-bottom: 1px solid var(--group-border); }
-        body.dark-theme .group-header { background: linear-gradient(135deg, #2a3040 0%, #323a48 100%); }
-        body.dark-theme .group-header td { background: transparent; }
-        .main-indicator { display: inline-flex; align-items: center; justify-content: center; width: 26px; height: 26px; background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); color: #fff; border-radius: 6px; font-size: 11px; font-weight: 700; box-shadow: 0 2px 4px rgba(59,130,246,0.3); }
-        body.dark-theme .main-indicator { background: linear-gradient(135deg, #60a5fa 0%, #3b82f6 100%); }
-        .cotraveler-row { background: #fff; position: relative; }
-        body.dark-theme .cotraveler-row { background: #1e2228; }
-        .cotraveler-row.green { background: var(--bg-row-green); }
-        .cotraveler-row.blue { background: var(--bg-row-blue); }
-        .cotraveler-row.red { background: var(--bg-row-red); }
-        .cotraveler-row.yellow { background: var(--bg-row-yellow); }
-        .cotraveler-row.grey { background: var(--bg-row-grey); }
-        body.dark-theme .cotraveler-row.green { background: #1e3528; }
-        body.dark-theme .cotraveler-row.green td { background: #1e3528; }
-        body.dark-theme .cotraveler-row.blue { background: #1e2a40; }
-        body.dark-theme .cotraveler-row.blue td { background: #1e2a40; }
-        body.dark-theme .cotraveler-row.red { background: #3d2428; }
-        body.dark-theme .cotraveler-row.red td { background: #3d2428; }
-        body.dark-theme .cotraveler-row.yellow { background: #3d3520; }
-        body.dark-theme .cotraveler-row.yellow td { background: #3d3520; }
-        body.dark-theme .cotraveler-row.grey { background: #2a3038; }
-        body.dark-theme .cotraveler-row.grey td { background: #2a3038; }
-        .cotraveler-row td { padding: 10px; border-bottom: 1px solid var(--border-light); }
-        .cotraveler-row:last-child td { border-bottom: none; }
-        .cotraveler-indicator { display: inline-flex; align-items: center; gap: 4px; }
-        .cotraveler-line { width: 14px; height: 2px; background: #cbd5e1; border-radius: 1px; }
-        body.dark-theme .cotraveler-line { background: #4a5460; }
-        .cotraveler-badge { display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; background: #f1f5f9; color: #64748b; border-radius: 5px; font-size: 10px; font-weight: 600; border: 1px solid #e2e8f0; }
-        body.dark-theme .cotraveler-badge { background: #343c48; color: #e0e6ed; border-color: #4a5460; }
-        .group-badge { display: inline-flex; align-items: center; gap: 4px; padding: 3px 8px; background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%); color: #fff; font-size: 10px; font-weight: 700; border-radius: 12px; margin-left: 8px; }
-        .group-badge i { font-size: 9px; }
-        .group-toggle { display: inline-flex; align-items: center; justify-content: center; width: 20px; height: 20px; background: #fff; border: 1px solid #e2e8f0; border-radius: 4px; cursor: pointer; font-size: 10px; color: #64748b; margin-right: 6px; transition: all 0.2s; }
-        .group-toggle:hover { background: #f1f5f9; }
-        .group-toggle.collapsed i { transform: rotate(-90deg); }
-        body.dark-theme .group-toggle { background: #343c48; border-color: #4a5460; color: #e0e6ed; }
-        .group-container.status-green { border-color: #86efac; }
-        .group-container.status-green .group-header { background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%); }
-        body.dark-theme .group-container.status-green { border-color: #6ee7b7; }
-        body.dark-theme .group-container.status-green .group-header { background: linear-gradient(135deg, #1e3a28 0%, #254530 100%); }
-        body.dark-theme .group-container.status-green .group-header td { background: transparent; }
-        .group-container.status-blue { border-color: #93c5fd; }
-        .group-container.status-blue .group-header { background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%); }
-        body.dark-theme .group-container.status-blue { border-color: #7dd3fc; }
-        body.dark-theme .group-container.status-blue .group-header { background: linear-gradient(135deg, #1e3048 0%, #253a55 100%); }
-        body.dark-theme .group-container.status-blue .group-header td { background: transparent; }
-        .group-container.status-red { border-color: #fca5a5; }
-        .group-container.status-red .group-header { background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%); }
-        body.dark-theme .group-container.status-red { border-color: #fca5a5; }
-        body.dark-theme .group-container.status-red .group-header { background: linear-gradient(135deg, #402830 0%, #4d3038 100%); }
-        body.dark-theme .group-container.status-red .group-header td { background: transparent; }
-        .group-container.status-yellow { border-color: #fcd34d; }
-        .group-container.status-yellow .group-header { background: linear-gradient(135deg, #fefce8 0%, #fef3c7 100%); }
-        body.dark-theme .group-container.status-yellow { border-color: #fde047; }
-        body.dark-theme .group-container.status-yellow .group-header { background: linear-gradient(135deg, #403820 0%, #4d4428 100%); }
-        body.dark-theme .group-container.status-yellow .group-header td { background: transparent; }
-        .group-container.status-grey { border-color: #d1d5db; }
-        .group-container.status-grey .group-header { background: linear-gradient(135deg, #f9fafb 0%, #f3f4f6 100%); }
-        body.dark-theme .group-container.status-grey { border-color: #9ca3af; }
-        body.dark-theme .group-container.status-grey .group-header { background: linear-gradient(135deg, #303840 0%, #3a4248 100%); }
-        body.dark-theme .group-container.status-grey .group-header td { background: transparent; }
-        .group-container.collapsed .cotraveler-row { display: none; }
-        .group-container.highlight-group { animation: group-highlight 2s ease-out; }
-        @keyframes group-highlight { 0% { box-shadow: 0 0 0 3px #3b82f6; } 100% { box-shadow: 0 1px 3px rgba(0,0,0,0.08); } }
-        .date-header { padding: 8px 12px; background: var(--bg-main); color: var(--text-secondary); font-size: 12px; font-weight: 600; display: flex; align-items: center; gap: 8px; margin-top: 16px; }
-        .date-header:first-child { margin-top: 8px; }
-        .date-header-line { flex: 1; height: 1px; background: var(--border-color); }
-        .date-header-text { padding: 4px 12px; background: var(--border-light); border-radius: 12px; white-space: nowrap; }
-        body.dark-theme .date-header-text { background: var(--border-color); }
-        .assign-select { width: 100%; padding: 6px 28px 6px 10px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 11px; font-weight: 500; background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2'%3E%3Cpolyline points='6,9 12,15 18,9'/%3E%3C/svg%3E") no-repeat right 8px center; color: #374151; cursor: pointer; appearance: none; }
-        .assign-select:hover { border-color: #3b82f6; }
-        .assign-select:focus { outline: none; border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,0.15); }
-        .assign-select.has-value { background-color: #eff6ff; border-color: #3b82f6; color: #1d4ed8; }
-        body.dark-theme .assign-select { background-color: var(--bg-row-grey); color: var(--text-primary); border-color: var(--border-color); }
-        body.dark-theme .assign-select.has-value { background-color: #2e2b45; border-color: #818cf8; color: #c4b5fd; }
-        .name { font-weight: 600; text-transform: uppercase; font-size: 13px; display: inline; }
-        .name-highlighted { background: #fef08a; padding: 2px 6px; border-radius: 3px; }
-        .agent { color: var(--text-secondary); font-weight: 500; font-size: 12px; display: block; margin-top: 2px; }
-        .cotraveler-name { font-weight: 500; font-size: 12px; color: var(--text-secondary); text-transform: uppercase; }
-        .status { display: inline-block; padding: 4px 10px; border-radius: 20px; font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.3px; cursor: pointer; }
-        .status:hover { filter: brightness(0.95); }
-        .status-completed { background: #dcfce7; color: #15803d; }
-        .status-visa-approved { background: #d1fae5; color: #047857; }
-        .status-doc { background: #dbeafe; color: #1d4ed8; }
-        .status-cancelled { background: #fee2e2; color: #b91c1c; }
-        .status-reschedule { background: #fef3c7; color: #b45309; }
-        .status-hold { background: #fef3c7; color: #92400e; }
-        body.dark-theme .status-completed { background: #34d399; color: #064e3b; }
-        body.dark-theme .status-visa-approved { background: #4ade80; color: #064e3b; }
-        body.dark-theme .status-doc { background: #60a5fa; color: #1e3a8a; }
-        body.dark-theme .status-cancelled { background: #f87171; color: #7f1d1d; }
-        body.dark-theme .status-reschedule, body.dark-theme .status-hold { background: #fbbf24; color: #78350f; }
-        .status-wrapper { display: flex; align-items: center; gap: 6px; }
-        .status-edit-btn { background: transparent; border: 1px solid #e2e8f0; border-radius: 4px; color: #94a3b8; cursor: pointer; padding: 4px 6px; font-size: 10px; }
-        .status-edit-btn:hover { background: #3b82f6; color: #fff; border-color: #3b82f6; }
-        body.dark-theme .status-edit-btn { background: var(--bg-row-grey); border-color: var(--border-color); color: var(--text-secondary); }
-        body.dark-theme .status-edit-btn:hover { background: #6366f1; color: #fff; }
-        .progress-wrapper { display: flex; align-items: center; gap: 4px; }
-        .progress-bar { width: 40px; height: 6px; background: #e5e7eb; border-radius: 3px; overflow: hidden; }
-        .progress-fill { height: 100%; background: #22c55e; border-radius: 3px; }
-        .progress-text { font-size: 12px; font-weight: 600; color: var(--text-secondary); }
-        body.dark-theme .progress-bar { background: var(--border-color); }
-        body.dark-theme .progress-fill { background: #6ee7b7; }
-        body.dark-theme .progress-text { color: var(--text-primary); }
-        .form-data-icon { display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; background: #3b82f6; color: #fff; border-radius: 4px; font-size: 11px; text-decoration: none; margin-left: 4px; }
-        .form-data-icon:hover { background: #2563eb; }
-        body.dark-theme .form-data-icon { background: #818cf8; color: #1e1b4b; }
-        .whatsapp-link { display: inline-flex; align-items: center; gap: 6px; color: var(--text-secondary); text-decoration: none; font-family: 'JetBrains Mono', monospace; font-size: 12px; }
-        .whatsapp-link:hover { color: #25d366; }
-        .whatsapp-link i { color: #25d366; font-size: 16px; }
-        .package { display: inline-block; padding: 4px 10px; border-radius: 20px; font-size: 9px; font-weight: 600; text-transform: uppercase; }
-        .package-full { background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; }
-        .package-fast-full { background: #fffbeb; color: #b45309; border: 1px solid #fde68a; }
-        .package-appointment { background: #f1f5f9; color: #475569; border: 1px solid #cbd5e1; }
-        .package-fast-appointment { background: #faf5ff; color: #7c3aed; border: 1px solid #e9d5ff; }
-        body.dark-theme .package-full { background: #34d399; color: #064e3b; border-color: #6ee7b7; }
-        body.dark-theme .package-fast-full { background: #fbbf24; color: #78350f; border-color: #fde047; }
-        body.dark-theme .package-appointment { background: #475569; color: #f1f5f9; border-color: #64748b; }
-        body.dark-theme .package-fast-appointment { background: #a78bfa; color: #2e1065; border-color: #c4b5fd; }
-        .payment { display: inline-block; padding: 4px 10px; border-radius: 20px; font-size: 9px; font-weight: 600; text-transform: uppercase; }
-        .payment-paid { background: #dcfce7; color: #166534; }
-        .payment-pending { background: #fef3c7; color: #92400e; }
-        .payment-partial { background: #dbeafe; color: #1e40af; }
-        .payment-not-required { background: #f1f5f9; color: #64748b; }
-        body.dark-theme .payment-paid { background: #34d399; color: #064e3b; }
-        body.dark-theme .payment-pending { background: #fbbf24; color: #78350f; }
-        body.dark-theme .payment-partial { background: #60a5fa; color: #1e3a8a; }
-        body.dark-theme .payment-not-required { background: #475569; color: #f1f5f9; }
-        .notes-wrapper { display: flex; align-items: flex-start; gap: 8px; }
-        .notes-text { flex: 1; font-size: 12px; color: var(--text-primary); white-space: normal; word-break: break-word; line-height: 1.4; }
-        .notes-text.error { color: #dc2626; }
-        .notes-edit-btn { display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; background: transparent; color: #94a3b8; border: 1px solid #e2e8f0; border-radius: 4px; cursor: pointer; font-size: 10px; flex-shrink: 0; }
-        .notes-edit-btn:hover { background: #3b82f6; color: #fff; border-color: #3b82f6; }
-        body.dark-theme .notes-edit-btn { background: var(--bg-row-grey); color: var(--text-secondary); border-color: var(--border-color); }
-        body.dark-theme .notes-edit-btn:hover { background: #6366f1; color: #fff; }
+        .group-container {
+            margin: 8px 0;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+            border: 1px solid var(--group-border);
+            background: var(--group-bg);
+        }
+
+        .group-container.single-traveler {
+            border-radius: 8px;
+            margin: 4px 0;
+        }
+
+        .group-container table {
+            margin: 0;
+            min-width: 100%;
+        }
+
+        .group-header {
+            background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+            position: relative;
+        }
+
+        .group-header td {
+            padding: 12px 10px;
+            border-bottom: 1px solid var(--group-border);
+        }
+
+        body.dark-theme .group-header {
+            background: linear-gradient(135deg, #2a3040 0%, #323a48 100%);
+        }
+
+        body.dark-theme .group-header td {
+            background: transparent;
+        }
+
+        .main-indicator {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 26px;
+            height: 26px;
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+            color: #fff;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 700;
+            box-shadow: 0 2px 4px rgba(59, 130, 246, 0.3);
+        }
+
+        body.dark-theme .main-indicator {
+            background: linear-gradient(135deg, #60a5fa 0%, #3b82f6 100%);
+        }
+
+        .cotraveler-row {
+            background: #fff;
+            position: relative;
+        }
+
+        body.dark-theme .cotraveler-row {
+            background: #1e2228;
+        }
+
+        .cotraveler-row.green {
+            background: var(--bg-row-green);
+        }
+
+        .cotraveler-row.blue {
+            background: var(--bg-row-blue);
+        }
+
+        .cotraveler-row.red {
+            background: var(--bg-row-red);
+        }
+
+        .cotraveler-row.yellow {
+            background: var(--bg-row-yellow);
+        }
+
+        .cotraveler-row.grey {
+            background: var(--bg-row-grey);
+        }
+
+        body.dark-theme .cotraveler-row.green {
+            background: #1e3528;
+        }
+
+        body.dark-theme .cotraveler-row.green td {
+            background: #1e3528;
+        }
+
+        body.dark-theme .cotraveler-row.blue {
+            background: #1e2a40;
+        }
+
+        body.dark-theme .cotraveler-row.blue td {
+            background: #1e2a40;
+        }
+
+        body.dark-theme .cotraveler-row.red {
+            background: #3d2428;
+        }
+
+        body.dark-theme .cotraveler-row.red td {
+            background: #3d2428;
+        }
+
+        body.dark-theme .cotraveler-row.yellow {
+            background: #3d3520;
+        }
+
+        body.dark-theme .cotraveler-row.yellow td {
+            background: #3d3520;
+        }
+
+        body.dark-theme .cotraveler-row.grey {
+            background: #2a3038;
+        }
+
+        body.dark-theme .cotraveler-row.grey td {
+            background: #2a3038;
+        }
+
+        .cotraveler-row td {
+            padding: 10px;
+            border-bottom: 1px solid var(--border-light);
+        }
+
+        .cotraveler-row:last-child td {
+            border-bottom: none;
+        }
+
+        .cotraveler-indicator {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .cotraveler-line {
+            width: 14px;
+            height: 2px;
+            background: #cbd5e1;
+            border-radius: 1px;
+        }
+
+        body.dark-theme .cotraveler-line {
+            background: #4a5460;
+        }
+
+        .cotraveler-badge {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 22px;
+            height: 22px;
+            background: #f1f5f9;
+            color: #64748b;
+            border-radius: 5px;
+            font-size: 10px;
+            font-weight: 600;
+            border: 1px solid #e2e8f0;
+        }
+
+        body.dark-theme .cotraveler-badge {
+            background: #343c48;
+            color: #e0e6ed;
+            border-color: #4a5460;
+        }
+
+        .group-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 3px 8px;
+            background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+            color: #fff;
+            font-size: 10px;
+            font-weight: 700;
+            border-radius: 12px;
+            margin-left: 8px;
+        }
+
+        .group-badge i {
+            font-size: 9px;
+        }
+
+        .group-toggle {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 20px;
+            height: 20px;
+            background: #fff;
+            border: 1px solid #e2e8f0;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 10px;
+            color: #64748b;
+            margin-right: 6px;
+            transition: all 0.2s;
+        }
+
+        .group-toggle:hover {
+            background: #f1f5f9;
+        }
+
+        .group-toggle.collapsed i {
+            transform: rotate(-90deg);
+        }
+
+        body.dark-theme .group-toggle {
+            background: #343c48;
+            border-color: #4a5460;
+            color: #e0e6ed;
+        }
+
+        .group-container.status-green {
+            border-color: #86efac;
+        }
+
+        .group-container.status-green .group-header {
+            background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+        }
+
+        body.dark-theme .group-container.status-green {
+            border-color: #6ee7b7;
+        }
+
+        body.dark-theme .group-container.status-green .group-header {
+            background: linear-gradient(135deg, #1e3a28 0%, #254530 100%);
+        }
+
+        body.dark-theme .group-container.status-green .group-header td {
+            background: transparent;
+        }
+
+        .group-container.status-blue {
+            border-color: #93c5fd;
+        }
+
+        .group-container.status-blue .group-header {
+            background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+        }
+
+        body.dark-theme .group-container.status-blue {
+            border-color: #7dd3fc;
+        }
+
+        body.dark-theme .group-container.status-blue .group-header {
+            background: linear-gradient(135deg, #1e3048 0%, #253a55 100%);
+        }
+
+        body.dark-theme .group-container.status-blue .group-header td {
+            background: transparent;
+        }
+
+        .group-container.status-red {
+            border-color: #fca5a5;
+        }
+
+        .group-container.status-red .group-header {
+            background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
+        }
+
+        body.dark-theme .group-container.status-red {
+            border-color: #fca5a5;
+        }
+
+        body.dark-theme .group-container.status-red .group-header {
+            background: linear-gradient(135deg, #402830 0%, #4d3038 100%);
+        }
+
+        body.dark-theme .group-container.status-red .group-header td {
+            background: transparent;
+        }
+
+        .group-container.status-yellow {
+            border-color: #fcd34d;
+        }
+
+        .group-container.status-yellow .group-header {
+            background: linear-gradient(135deg, #fefce8 0%, #fef3c7 100%);
+        }
+
+        body.dark-theme .group-container.status-yellow {
+            border-color: #fde047;
+        }
+
+        body.dark-theme .group-container.status-yellow .group-header {
+            background: linear-gradient(135deg, #403820 0%, #4d4428 100%);
+        }
+
+        body.dark-theme .group-container.status-yellow .group-header td {
+            background: transparent;
+        }
+
+        .group-container.status-grey {
+            border-color: #d1d5db;
+        }
+
+        .group-container.status-grey .group-header {
+            background: linear-gradient(135deg, #f9fafb 0%, #f3f4f6 100%);
+        }
+
+        body.dark-theme .group-container.status-grey {
+            border-color: #9ca3af;
+        }
+
+        body.dark-theme .group-container.status-grey .group-header {
+            background: linear-gradient(135deg, #303840 0%, #3a4248 100%);
+        }
+
+        body.dark-theme .group-container.status-grey .group-header td {
+            background: transparent;
+        }
+
+        .group-container.collapsed .cotraveler-row {
+            display: none;
+        }
+
+        .group-container.highlight-group {
+            animation: group-highlight 2s ease-out;
+        }
+
+        @keyframes group-highlight {
+            0% {
+                box-shadow: 0 0 0 3px #3b82f6;
+            }
+
+            100% {
+                box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+            }
+        }
+
+        .date-header {
+            padding: 8px 12px;
+            background: var(--bg-main);
+            color: var(--text-secondary);
+            font-size: 12px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 16px;
+        }
+
+        .date-header:first-child {
+            margin-top: 8px;
+        }
+
+        .date-header-line {
+            flex: 1;
+            height: 1px;
+            background: var(--border-color);
+        }
+
+        .date-header-text {
+            padding: 4px 12px;
+            background: var(--border-light);
+            border-radius: 12px;
+            white-space: nowrap;
+        }
+
+        body.dark-theme .date-header-text {
+            background: var(--border-color);
+        }
+
+        .assign-select {
+            width: 100%;
+            padding: 6px 28px 6px 10px;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 500;
+            background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2'%3E%3Cpolyline points='6,9 12,15 18,9'/%3E%3C/svg%3E") no-repeat right 8px center;
+            color: #374151;
+            cursor: pointer;
+            appearance: none;
+        }
+
+        .assign-select:hover {
+            border-color: #3b82f6;
+        }
+
+        .assign-select:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+        }
+
+        .assign-select.has-value {
+            background-color: #eff6ff;
+            border-color: #3b82f6;
+            color: #1d4ed8;
+        }
+
+        body.dark-theme .assign-select {
+            background-color: var(--bg-row-grey);
+            color: var(--text-primary);
+            border-color: var(--border-color);
+        }
+
+        body.dark-theme .assign-select.has-value {
+            background-color: #2e2b45;
+            border-color: #818cf8;
+            color: #c4b5fd;
+        }
+
+        .name {
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 13px;
+            display: inline;
+        }
+
+        .name-highlighted {
+            background: #fef08a;
+            padding: 2px 6px;
+            border-radius: 3px;
+        }
+
+        .agent {
+            color: var(--text-secondary);
+            font-weight: 500;
+            font-size: 12px;
+            display: block;
+            margin-top: 2px;
+        }
+
+        .cotraveler-name {
+            font-weight: 500;
+            font-size: 12px;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+        }
+
+        .status {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 10px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+            cursor: pointer;
+        }
+
+        .status:hover {
+            filter: brightness(0.95);
+        }
+
+        .status-completed {
+            background: #dcfce7;
+            color: #15803d;
+        }
+
+        .status-visa-approved {
+            background: #d1fae5;
+            color: #047857;
+        }
+
+        .status-doc {
+            background: #dbeafe;
+            color: #1d4ed8;
+        }
+
+        .status-cancelled {
+            background: #fee2e2;
+            color: #b91c1c;
+        }
+
+        .status-reschedule {
+            background: #fef3c7;
+            color: #b45309;
+        }
+
+        .status-hold {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        body.dark-theme .status-completed {
+            background: #34d399;
+            color: #064e3b;
+        }
+
+        body.dark-theme .status-visa-approved {
+            background: #4ade80;
+            color: #064e3b;
+        }
+
+        body.dark-theme .status-doc {
+            background: #60a5fa;
+            color: #1e3a8a;
+        }
+
+        body.dark-theme .status-cancelled {
+            background: #f87171;
+            color: #7f1d1d;
+        }
+
+        body.dark-theme .status-reschedule,
+        body.dark-theme .status-hold {
+            background: #fbbf24;
+            color: #78350f;
+        }
+
+        .status-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .status-edit-btn {
+            background: transparent;
+            border: 1px solid #e2e8f0;
+            border-radius: 4px;
+            color: #94a3b8;
+            cursor: pointer;
+            padding: 4px 6px;
+            font-size: 10px;
+        }
+
+        .status-edit-btn:hover {
+            background: #3b82f6;
+            color: #fff;
+            border-color: #3b82f6;
+        }
+
+        body.dark-theme .status-edit-btn {
+            background: var(--bg-row-grey);
+            border-color: var(--border-color);
+            color: var(--text-secondary);
+        }
+
+        body.dark-theme .status-edit-btn:hover {
+            background: #6366f1;
+            color: #fff;
+        }
+
+        .progress-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .progress-bar {
+            width: 40px;
+            height: 6px;
+            background: #e5e7eb;
+            border-radius: 3px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: #22c55e;
+            border-radius: 3px;
+        }
+
+        .progress-text {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-secondary);
+        }
+
+        body.dark-theme .progress-bar {
+            background: var(--border-color);
+        }
+
+        body.dark-theme .progress-fill {
+            background: #6ee7b7;
+        }
+
+        body.dark-theme .progress-text {
+            color: var(--text-primary);
+        }
+
+        .form-data-icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 22px;
+            height: 22px;
+            background: #3b82f6;
+            color: #fff;
+            border-radius: 4px;
+            font-size: 11px;
+            text-decoration: none;
+            margin-left: 4px;
+        }
+
+        .form-data-icon:hover {
+            background: #2563eb;
+        }
+
+        body.dark-theme .form-data-icon {
+            background: #818cf8;
+            color: #1e1b4b;
+        }
+
+        .whatsapp-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+        }
+
+        .whatsapp-link:hover {
+            color: #25d366;
+        }
+
+        .whatsapp-link i {
+            color: #25d366;
+            font-size: 16px;
+        }
+
+        .package {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 9px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .package-full {
+            background: #ecfdf5;
+            color: #047857;
+            border: 1px solid #a7f3d0;
+        }
+
+        .package-fast-full {
+            background: #fffbeb;
+            color: #b45309;
+            border: 1px solid #fde68a;
+        }
+
+        .package-appointment {
+            background: #f1f5f9;
+            color: #475569;
+            border: 1px solid #cbd5e1;
+        }
+
+        .package-fast-appointment {
+            background: #faf5ff;
+            color: #7c3aed;
+            border: 1px solid #e9d5ff;
+        }
+
+        body.dark-theme .package-full {
+            background: #34d399;
+            color: #064e3b;
+            border-color: #6ee7b7;
+        }
+
+        body.dark-theme .package-fast-full {
+            background: #fbbf24;
+            color: #78350f;
+            border-color: #fde047;
+        }
+
+        body.dark-theme .package-appointment {
+            background: #475569;
+            color: #f1f5f9;
+            border-color: #64748b;
+        }
+
+        body.dark-theme .package-fast-appointment {
+            background: #a78bfa;
+            color: #2e1065;
+            border-color: #c4b5fd;
+        }
+
+        .payment {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 9px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .payment-paid {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .payment-pending {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .payment-partial {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+
+        .payment-not-required {
+            background: #f1f5f9;
+            color: #64748b;
+        }
+
+        body.dark-theme .payment-paid {
+            background: #34d399;
+            color: #064e3b;
+        }
+
+        body.dark-theme .payment-pending {
+            background: #fbbf24;
+            color: #78350f;
+        }
+
+        body.dark-theme .payment-partial {
+            background: #60a5fa;
+            color: #1e3a8a;
+        }
+
+        body.dark-theme .payment-not-required {
+            background: #475569;
+            color: #f1f5f9;
+        }
+
+        .notes-wrapper {
+            display: flex;
+            align-items: flex-start;
+            gap: 8px;
+        }
+
+        .notes-text {
+            flex: 1;
+            font-size: 12px;
+            color: var(--text-primary);
+            white-space: normal;
+            word-break: break-word;
+            line-height: 1.4;
+        }
+
+        .notes-text.error {
+            color: #dc2626;
+        }
+
+        .notes-edit-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 22px;
+            height: 22px;
+            background: transparent;
+            color: #94a3b8;
+            border: 1px solid #e2e8f0;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 10px;
+            flex-shrink: 0;
+        }
+
+        .notes-edit-btn:hover {
+            background: #3b82f6;
+            color: #fff;
+            border-color: #3b82f6;
+        }
+
+        body.dark-theme .notes-edit-btn {
+            background: var(--bg-row-grey);
+            color: var(--text-secondary);
+            border-color: var(--border-color);
+        }
+
+        body.dark-theme .notes-edit-btn:hover {
+            background: #6366f1;
+            color: #fff;
+        }
+
         /* AIHFC Buttons */
-        .aihfc-wrapper { display: flex; gap: 2px; align-items: center; }
-        .aihfc-btn { width: 18px; height: 18px; border-radius: 3px; border: 1px solid #d1d5db; background: #f9fafb; color: #6b7280; font-size: 9px; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; transition: all 0.15s; padding: 0; }
-        .aihfc-btn:hover { border-color: #3b82f6; color: #3b82f6; background: #eff6ff; }
-        .aihfc-btn.active { background: #22c55e; color: #fff; border-color: #16a34a; }
-        .aihfc-btn.active:hover { background: #16a34a; }
-        body.dark-theme .aihfc-btn { background: #343c48; border-color: #4a5460; color: #e0e6ed; }
-        body.dark-theme .aihfc-btn:hover { border-color: #7dd3fc; color: #7dd3fc; background: #2a3848; }
-        body.dark-theme .aihfc-btn.active { background: #34d399; color: #fff; border-color: #6ee7b7; }
-        .notes-modal-backdrop { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; display: none; align-items: center; justify-content: center; }
-        .notes-modal { background: var(--bg-main); border-radius: 8px; width: 90%; max-width: 500px; box-shadow: 0 20px 50px rgba(0,0,0,0.3); }
-        .notes-modal-header { padding: 16px 20px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; }
-        .notes-modal-header h3 { font-size: 16px; font-weight: 600; margin: 0; }
-        .notes-modal-close { background: none; border: none; font-size: 20px; cursor: pointer; color: var(--text-muted); }
-        .notes-modal-body { padding: 20px; }
-        .notes-modal-body textarea { width: 100%; min-height: 150px; padding: 12px; border: 1px solid var(--border-color); border-radius: 6px; font-size: 14px; font-family: inherit; resize: vertical; background: var(--bg-main); color: var(--text-primary); }
-        .notes-modal-body textarea:focus { outline: none; border-color: #3b82f6; }
-        .notes-modal-footer { padding: 16px 20px; border-top: 1px solid var(--border-color); display: flex; justify-content: flex-end; gap: 10px; }
-        .notes-modal-btn { padding: 10px 20px; border-radius: 6px; font-size: 14px; font-weight: 500; cursor: pointer; border: none; }
-        .notes-modal-btn.cancel { background: #e5e7eb; color: #374151; }
-        .notes-modal-btn.save { background: #3b82f6; color: #fff; }
-        .notes-modal-btn:hover { opacity: 0.9; }
-        .empty-state, .loading-state { text-align: center; padding: 60px 20px; color: var(--text-muted); }
-        .empty-state i, .loading-state i { font-size: 40px; margin-bottom: 12px; opacity: 0.5; }
-        .loading-state i { animation: spin 1s linear infinite; }
-        @keyframes spin { to { transform: rotate(360deg); } }
-        #groups-container { padding: 8px; }
+        .aihfc-wrapper {
+            display: flex;
+            gap: 2px;
+            align-items: center;
+        }
+
+        .aihfc-btn {
+            width: 18px;
+            height: 18px;
+            border-radius: 3px;
+            border: 1px solid #d1d5db;
+            background: #f9fafb;
+            color: #6b7280;
+            font-size: 9px;
+            font-weight: 700;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.15s;
+            padding: 0;
+        }
+
+        .aihfc-btn:hover {
+            border-color: #3b82f6;
+            color: #3b82f6;
+            background: #eff6ff;
+        }
+
+        .aihfc-btn.active {
+            background: #22c55e;
+            color: #fff;
+            border-color: #16a34a;
+        }
+
+        .aihfc-btn.active:hover {
+            background: #16a34a;
+        }
+
+        body.dark-theme .aihfc-btn {
+            background: #343c48;
+            border-color: #4a5460;
+            color: #e0e6ed;
+        }
+
+        body.dark-theme .aihfc-btn:hover {
+            border-color: #7dd3fc;
+            color: #7dd3fc;
+            background: #2a3848;
+        }
+
+        body.dark-theme .aihfc-btn.active {
+            background: #34d399;
+            color: #fff;
+            border-color: #6ee7b7;
+        }
+
+        .notes-modal-backdrop {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            display: none;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .notes-modal {
+            background: var(--bg-main);
+            border-radius: 8px;
+            width: 90%;
+            max-width: 500px;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
+        }
+
+        .notes-modal-header {
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .notes-modal-header h3 {
+            font-size: 16px;
+            font-weight: 600;
+            margin: 0;
+        }
+
+        .notes-modal-close {
+            background: none;
+            border: none;
+            font-size: 20px;
+            cursor: pointer;
+            color: var(--text-muted);
+        }
+
+        .notes-modal-body {
+            padding: 20px;
+        }
+
+        .notes-modal-body textarea {
+            width: 100%;
+            min-height: 150px;
+            padding: 12px;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            font-size: 14px;
+            font-family: inherit;
+            resize: vertical;
+            background: var(--bg-main);
+            color: var(--text-primary);
+        }
+
+        .notes-modal-body textarea:focus {
+            outline: none;
+            border-color: #3b82f6;
+        }
+
+        .notes-modal-footer {
+            padding: 16px 20px;
+            border-top: 1px solid var(--border-color);
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+
+        .notes-modal-btn {
+            padding: 10px 20px;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            border: none;
+        }
+
+        .notes-modal-btn.cancel {
+            background: #e5e7eb;
+            color: #374151;
+        }
+
+        .notes-modal-btn.save {
+            background: #3b82f6;
+            color: #fff;
+        }
+
+        .notes-modal-btn:hover {
+            opacity: 0.9;
+        }
+
+        .empty-state,
+        .loading-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--text-muted);
+        }
+
+        .empty-state i,
+        .loading-state i {
+            font-size: 40px;
+            margin-bottom: 12px;
+            opacity: 0.5;
+        }
+
+        .loading-state i {
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        #groups-container {
+            padding: 8px;
+        }
     </style>
 </head>
+
 <body>
     <div class="header">
         <div class="header-left">
-            <button class="header-btn" onclick="window.location.href='index.html'"><i class="fas fa-arrow-left"></i> Back</button>
+            <button class="header-btn" onclick="window.location.href='index.html'"><i class="fas fa-arrow-left"></i>
+                Back</button>
             <h1><i class="fas fa-table"></i> BAT - Booked Appointments Tracker</h1>
         </div>
         <div class="header-actions">
@@ -274,13 +1436,17 @@
     </div>
     <div class="stats-bar">
         <div class="stat"><span class="stat-label">Total:</span><span class="stat-value" id="stat-total">0</span></div>
-        <div class="stat"><span class="stat-label">Full Support:</span><span class="stat-value blue" id="stat-fullsupport">0</span></div>
-        <div class="stat"><span class="stat-label">Appointment:</span><span class="stat-value" id="stat-appointment">0</span></div>
-        <div class="stat"><span class="stat-label">Completed:</span><span class="stat-value green" id="stat-completed">0</span></div>
+        <div class="stat"><span class="stat-label">Full Support:</span><span class="stat-value blue"
+                id="stat-fullsupport">0</span></div>
+        <div class="stat"><span class="stat-label">Appointment:</span><span class="stat-value"
+                id="stat-appointment">0</span></div>
+        <div class="stat"><span class="stat-label">Completed:</span><span class="stat-value green"
+                id="stat-completed">0</span></div>
         <div class="stat-separator"></div>
         <div class="stat"><span class="stat-label">Assigned To:</span></div>
         <div class="stat assigned-stats" id="assigned-container"></div>
-        <div class="stat uk-time"><span class="stat-label"><i class="fas fa-clock"></i> UK:</span><span class="stat-value" id="uk-time">--:--</span></div>
+        <div class="stat uk-time"><span class="stat-label"><i class="fas fa-clock"></i> UK:</span><span
+                class="stat-value" id="uk-time">--:--</span></div>
     </div>
     <div class="tabs-container">
         <button class="tab tab-icon" title="Add"><i class="fas fa-plus"></i></button>
@@ -288,415 +1454,444 @@
         <div id="month-tabs"></div>
     </div>
     <div class="table-wrapper">
-        <table><thead><tr>
-            <th>#</th><th>Date</th><th>Name</th><th>Assign To</th><th>Route</th><th>Status</th><th>Package</th><th>Doc %</th><th>AIHFC</th><th>WhatsApp</th><th>Payment</th><th>Notes</th>
-        </tr></thead></table>
+        <table>
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Date</th>
+                    <th>Name</th>
+                    <th>Assign To</th>
+                    <th>Route</th>
+                    <th>Status</th>
+                    <th>Package</th>
+                    <th>Doc %</th>
+                    <th>AIHFC</th>
+                    <th>WhatsApp</th>
+                    <th>Payment</th>
+                    <th>Notes</th>
+                </tr>
+            </thead>
+        </table>
         <div id="groups-container"></div>
     </div>
-    <div class="loading-state" id="loading" style="display:none;"><i class="fas fa-spinner"></i><p>Loading data...</p></div>
-    <div class="empty-state" id="empty" style="display:none;"><i class="fas fa-inbox"></i><p>No records found</p></div>
+    <div class="loading-state" id="loading" style="display:none;"><i class="fas fa-spinner"></i>
+        <p>Loading data...</p>
+    </div>
+    <div class="empty-state" id="empty" style="display:none;"><i class="fas fa-inbox"></i>
+        <p>No records found</p>
+    </div>
     <div class="notes-modal-backdrop" id="notes-modal">
         <div class="notes-modal">
-            <div class="notes-modal-header"><h3>Edit Notes</h3><button class="notes-modal-close" id="notes-modal-close">&times;</button></div>
+            <div class="notes-modal-header">
+                <h3>Edit Notes</h3><button class="notes-modal-close" id="notes-modal-close">&times;</button>
+            </div>
             <div class="notes-modal-body"><textarea id="notes-textarea" placeholder="Enter notes..."></textarea></div>
-            <div class="notes-modal-footer"><button class="notes-modal-btn cancel" id="notes-cancel">Cancel</button><button class="notes-modal-btn save" id="notes-save">Save</button></div>
+            <div class="notes-modal-footer"><button class="notes-modal-btn cancel"
+                    id="notes-cancel">Cancel</button><button class="notes-modal-btn save" id="notes-save">Save</button>
+            </div>
         </div>
     </div>
     <div class="notes-modal-backdrop" id="status-modal">
         <div class="notes-modal" style="max-width:350px;">
-            <div class="notes-modal-header"><h3>Update Status</h3><button class="notes-modal-close" id="status-modal-close">&times;</button></div>
+            <div class="notes-modal-header">
+                <h3>Update Status</h3><button class="notes-modal-close" id="status-modal-close">&times;</button>
+            </div>
             <div class="notes-modal-body">
                 <select id="status-select" class="status-select" style="display:block;width:100%;padding:10px;">
-                    <option value="Doc">Doc</option><option value="Completed">Completed</option><option value="Visa Approved">Visa Approved</option>
-                    <option value="Reschedule">Reschedule</option><option value="Cancelled">Cancelled</option><option value="Refunded">Refunded</option>
+                    <option value="Doc">Doc</option>
+                    <option value="Completed">Completed</option>
+                    <option value="Visa Approved">Visa Approved</option>
+                    <option value="Reschedule">Reschedule</option>
+                    <option value="Cancelled">Cancelled</option>
+                    <option value="Refunded">Refunded</option>
                 </select>
             </div>
-            <div class="notes-modal-footer"><button class="notes-modal-btn cancel" id="status-cancel">Cancel</button><button class="notes-modal-btn save" id="status-save">Update</button></div>
+            <div class="notes-modal-footer"><button class="notes-modal-btn cancel"
+                    id="status-cancel">Cancel</button><button class="notes-modal-btn save"
+                    id="status-save">Update</button></div>
         </div>
     </div>
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
-<script>
-$(function() {
-    let allRecords = [], currentDisplayedRecords = [], usersList = [], currentUsername = '';
-    const monthNames = ['January','February','March','April','May','June','July','August','September','October','November','December'];
-    const now = new Date(), currentMonth = now.getMonth() + 1, currentYear = now.getFullYear();
+    <script src="auth.js"></script>
+    <script>
+        $(async function () {
+            const session = await VaultAuth.requireAuth();
+            if (!session) return;
 
-    function isExcludedStatus(s) {
-        if (!s) return false;
-        const st = s.toLowerCase().trim();
-        return ['hold','on hold','wait app','refund request'].some(p => st === p || st.includes(p));
-    }
+            currentUsername = session.user?.username || '';
+            fetchUsers();
+            initializeData();
+        });
 
-    function updateUKTime() {
-        $('#uk-time').text(new Date().toLocaleString('en-GB',{timeZone:'Europe/London',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false}));
-    }
-    updateUKTime(); setInterval(updateUKTime, 1000);
+        function fetchUsers() {
+            // Fallback users if API endpoint not available or to augment
+            usersList = [{ username: 'Salija' }, { username: 'Denny' }, { username: 'Ankit' }, { username: 'Admin' }];
+            // If there's a users endpoint in Spring Boot, calling it here:
+            // VaultAuth.apiCall({url: '/users'}).done(res => usersList = res.data);
+        }
 
-    $.get('api/auth.php?action=check_session', function(res) {
-        if (!res.loggedin) { window.location.href = 'index.html'; return; }
-        currentUsername = res.username || '';
-        fetchUsers().then(() => initializeData());
-    }).fail(() => window.location.href = 'index.html');
+        if (localStorage.getItem('theme') === 'dark') { $('body').addClass('dark-theme'); $('#theme-btn i').removeClass('fa-moon').addClass('fa-sun'); }
+        $('#theme-btn').click(function () { $('body').toggleClass('dark-theme'); localStorage.setItem('theme', $('body').hasClass('dark-theme') ? 'dark' : 'light'); $(this).find('i').toggleClass('fa-moon fa-sun'); });
+        $('#logout-btn').click(() => VaultAuth.logout());
+        $('#refresh-btn').click(initializeData);
+        $('#export-btn').click(exportCSV);
 
-    function fetchUsers() {
-        const defaultUsers = [{username:'Salija'},{username:'Denny'},{username:'Ankit'},{username:'Admin'}];
-        return $.get('api/auth.php?action=read_users', function(res) {
-            usersList = (res.status === 'success' && res.data?.length > 0) ? res.data : defaultUsers;
-            defaultUsers.forEach(d => { if (!usersList.find(u => u.username.toLowerCase() === d.username.toLowerCase())) usersList.push(d); });
-        }).fail(() => usersList = defaultUsers);
-    }
+        function initializeData() {
+            $('#loading').show(); $('#empty').hide(); $('#groups-container').empty();
 
-    if (localStorage.getItem('theme') === 'dark') { $('body').addClass('dark-theme'); $('#theme-btn i').removeClass('fa-moon').addClass('fa-sun'); }
-    $('#theme-btn').click(function() { $('body').toggleClass('dark-theme'); localStorage.setItem('theme', $('body').hasClass('dark-theme') ? 'dark' : 'light'); $(this).find('i').toggleClass('fa-moon fa-sun'); });
-    $('#logout-btn').click(() => $.get('api/auth.php?action=logout', () => window.location.href = 'index.html'));
-    $('#refresh-btn').click(initializeData);
-    $('#export-btn').click(exportCSV);
+            VaultAuth.apiCall({
+                url: VaultAuth.API_BASE_URL + '/travelers?page=1&limit=9999&summary=false',
+                method: 'GET'
+            }).done(function (res) {
+                let records = res.data?.content || res.data || (Array.isArray(res) ? res : []);
 
-    function initializeData() {
-        $('#loading').show(); $('#empty').hide(); $('#groups-container').empty();
-        $.get('api/travelers.php?action=read_all&limit=9999', function(res) {
-            let records = res?.records || res?.data || (Array.isArray(res) ? res : []);
-            $.get('api/dependents.php?action=read_all&limit=9999', function(depRes) {
-                let dependents = depRes?.records || depRes?.data || (Array.isArray(depRes) ? depRes : []);
-                const depByTraveler = {};
-                dependents.forEach(dep => {
-                    const tid = dep.traveler_id || dep.traveller_id || dep.parent_id || dep.main_traveler_id;
-                    if (tid) { if (!depByTraveler[tid]) depByTraveler[tid] = []; depByTraveler[tid].push(dep); }
+                VaultAuth.apiCall({
+                    url: VaultAuth.API_BASE_URL + '/dependents?page=1&limit=9999',
+                    method: 'GET'
+                }).done(function (depRes) {
+                    let dependents = depRes.data || (Array.isArray(depRes) ? depRes : []);
+                    const depByTraveler = {};
+                    dependents.forEach(dep => {
+                        const tid = dep.traveler_id || dep.traveller_id || dep.parent_id || dep.main_traveler_id;
+                        if (tid) { if (!depByTraveler[tid]) depByTraveler[tid] = []; depByTraveler[tid].push(dep); }
+                    });
+                    records.forEach(r => { if (!r.dependents || !r.dependents.length) r.dependents = depByTraveler[r.id] || []; });
+                    finishLoading(records);
+                }).fail(() => finishLoading(records));
+            }).fail((xhr) => {
+                if (xhr.status === 401 || xhr.status === 403) { VaultAuth.logout(); return; }
+                $('#loading').hide(); $('#empty').show().find('p').text('Error loading data');
+            });
+        }
+
+        function finishLoading(records) {
+            $('#loading').hide();
+            allRecords = records.filter(r => {
+                const mainExcluded = isExcludedStatus(r.status);
+                if (!mainExcluded) { r._mainHidden = false; return true; }
+                const deps = r.dependents || [];
+                if (deps.length > 0 && deps.some(d => !isExcludedStatus(d.status))) { r._mainHidden = true; return true; }
+                return false;
+            });
+            generateMonthTabs(true);
+        }
+
+        function generateMonthTabs(isInitial = false) {
+            const monthsSet = new Map();
+            allRecords.forEach(r => {
+                // Add main traveler's month if not hidden
+                if (!r._mainHidden) {
+                    const d = parseDate(r.doc_date);
+                    if (d) {
+                        const k = d.getFullYear() * 100 + (d.getMonth() + 1);
+                        if (!monthsSet.has(k)) monthsSet.set(k, { month: d.getMonth() + 1, year: d.getFullYear() });
+                    }
+                }
+
+                // Add months from valid dependents
+                const validDeps = (r.dependents || []).filter(dep => !isExcludedStatus(dep.status));
+                validDeps.forEach(dep => {
+                    const dd = parseDate(dep.doc_date);
+                    if (dd) {
+                        const k = dd.getFullYear() * 100 + (dd.getMonth() + 1);
+                        if (!monthsSet.has(k)) monthsSet.set(k, { month: dd.getMonth() + 1, year: dd.getFullYear() });
+                    }
                 });
-                records.forEach(r => { if (!r.dependents || !r.dependents.length) r.dependents = depByTraveler[r.id] || []; });
-                finishLoading(records);
-            }).fail(() => finishLoading(records));
-        }).fail(() => { $('#loading').hide(); $('#empty').show().find('p').text('Error loading data'); });
-    }
-
-    function finishLoading(records) {
-        $('#loading').hide();
-        allRecords = records.filter(r => {
-            const mainExcluded = isExcludedStatus(r.status);
-            if (!mainExcluded) { r._mainHidden = false; return true; }
-            const deps = r.dependents || [];
-            if (deps.length > 0 && deps.some(d => !isExcludedStatus(d.status))) { r._mainHidden = true; return true; }
-            return false;
-        });
-        generateMonthTabs(true);
-    }
-
-    function generateMonthTabs(isInitial = false) {
-        const monthsSet = new Map();
-        allRecords.forEach(r => {
-            // Add main traveler's month if not hidden
-            if (!r._mainHidden) {
-                const d = parseDate(r.doc_date);
-                if (d) { 
-                    const k = d.getFullYear() * 100 + (d.getMonth() + 1); 
-                    if (!monthsSet.has(k)) monthsSet.set(k, {month: d.getMonth()+1, year: d.getFullYear()}); 
-                }
-            }
-            
-            // Add months from valid dependents
-            const validDeps = (r.dependents || []).filter(dep => !isExcludedStatus(dep.status));
-            validDeps.forEach(dep => {
-                const dd = parseDate(dep.doc_date);
-                if (dd) {
-                    const k = dd.getFullYear() * 100 + (dd.getMonth() + 1);
-                    if (!monthsSet.has(k)) monthsSet.set(k, {month: dd.getMonth()+1, year: dd.getFullYear()});
-                }
             });
-        });
-        const sorted = Array.from(monthsSet.entries()).sort((a,b) => b[0] - a[0]);
-        const hasCurrent = monthsSet.has(currentYear * 100 + currentMonth);
-        let html = '<button class="tab" data-filter="all">All</button>';
-        sorted.forEach(([k,{month,year}]) => {
-            const active = (hasCurrent && month === currentMonth && year === currentYear) ? 'active' : '';
-            html += `<button class="tab ${active}" data-month="${month}" data-year="${year}">${monthNames[month-1]} ${year}</button>`;
-        });
-        $('#month-tabs').html(html).on('click', '.tab', function() {
-            $('.tab').removeClass('active'); $(this).addClass('active');
-            const m = parseInt($(this).data('month')) || 0, y = parseInt($(this).data('year')) || 0;
-            $(this).data('filter') === 'all' ? loadAllData() : loadDataForMonth(m, y);
-        });
-        if (isInitial) {
-            if (hasCurrent) loadDataForMonth(currentMonth, currentYear, true);
-            else if (sorted.length > 0) { const f = sorted[0][1]; $('#month-tabs .tab').removeClass('active'); $(`#month-tabs .tab[data-month="${f.month}"][data-year="${f.year}"]`).addClass('active'); loadDataForMonth(f.month, f.year, true); }
-        }
-    }
-
-    function loadDataForMonth(month, year, isInitial = false) {
-        let records = allRecords.filter(r => {
-            // Check main traveler's date (if not hidden)
-            if (!r._mainHidden) {
-                const d = parseDate(r.doc_date);
-                if (d && d.getMonth() + 1 === month && d.getFullYear() === year) return true;
-            }
-            
-            // Check dependents' dates (for hidden main or to include record if dependent matches)
-            const validDeps = (r.dependents || []).filter(dep => !isExcludedStatus(dep.status));
-            for (let dep of validDeps) { 
-                const dd = parseDate(dep.doc_date); 
-                if (dd && dd.getMonth() + 1 === month && dd.getFullYear() === year) return true; 
-            }
-            
-            return false;
-        });
-        records.sort((a,b) => {
-            let da, db;
-            
-            // For hidden main travelers, use the earliest valid dependent's date
-            if (a._mainHidden && a.dependents?.length) {
-                const validDeps = a.dependents.filter(d => !isExcludedStatus(d.status) && d.doc_date);
-                da = validDeps.length > 0 ? parseDate(validDeps[0].doc_date) : parseDate(a.doc_date);
-            } else {
-                da = parseDate(a.doc_date);
-            }
-            
-            if (b._mainHidden && b.dependents?.length) {
-                const validDeps = b.dependents.filter(d => !isExcludedStatus(d.status) && d.doc_date);
-                db = validDeps.length > 0 ? parseDate(validDeps[0].doc_date) : parseDate(b.doc_date);
-            } else {
-                db = parseDate(b.doc_date);
-            }
-            
-            // Handle null dates - put at end
-            if (!da && !db) return 0;
-            if (!da) return 1;
-            if (!db) return -1;
-            
-            return da - db;
-        });
-        displayRecords(records, isInitial);
-    }
-
-    function loadAllData() { 
-        let r = [...allRecords].sort((a,b) => {
-            const da = parseDate(a.doc_date), db = parseDate(b.doc_date);
-            if (!da && !db) return 0;
-            if (!da) return 1;
-            if (!db) return -1;
-            return da - db;
-        }); 
-        displayRecords(r, false); 
-    }
-
-    function displayRecords(records, scrollToToday = false) {
-        $('#groups-container').empty(); currentDisplayedRecords = records;
-        if (!records.length) { $('#empty').show(); updateStats(0,0,0,0,{}); return; }
-        $('#empty').hide(); renderGroups(records);
-        let total = 0, full = 0, appt = 0, completed = 0, assigned = {};
-        records.forEach(r => {
-            if (!r._mainHidden) {
-                total++;
-                const pkg = (r.package || '').toLowerCase();
-                if (pkg.includes('full') || pkg.includes('fast')) full++; else if (pkg.includes('appointment')) appt++;
-                const st = (r.status || '').toLowerCase();
-                if (st === 'completed' || st === 'visa approved') completed++;
-                const m = (r.notes || '').match(/\[\[\s*Documentation Support Assign to\s+(.+?)\s*\]\]/);
-                if (m) assigned[m[1].trim()] = (assigned[m[1].trim()] || 0) + 1;
-            }
-            (r.dependents || []).forEach(dep => {
-                if (isExcludedStatus(dep.status)) return;
-                total++;
-                const dpkg = (dep.package || r.package || '').toLowerCase();
-                if (dpkg.includes('full') || dpkg.includes('fast')) full++; else if (dpkg.includes('appointment')) appt++;
-                const dst = (dep.status || '').toLowerCase();
-                if (dst === 'completed' || dst === 'visa approved') completed++;
+            const sorted = Array.from(monthsSet.entries()).sort((a, b) => b[0] - a[0]);
+            const hasCurrent = monthsSet.has(currentYear * 100 + currentMonth);
+            let html = '<button class="tab" data-filter="all">All</button>';
+            sorted.forEach(([k, { month, year }]) => {
+                const active = (hasCurrent && month === currentMonth && year === currentYear) ? 'active' : '';
+                html += `<button class="tab ${active}" data-month="${month}" data-year="${year}">${monthNames[month - 1]} ${year}</button>`;
             });
-        });
-        updateStats(total, full, appt, completed, assigned);
-        if (scrollToToday) setTimeout(scrollToCurrentDate, 100);
-    }
-
-    function scrollToCurrentDate() {
-        const today = new Date(); today.setHours(0,0,0,0);
-        const todayStr = `${String(today.getDate()).padStart(2,'0')}/${String(today.getMonth()+1).padStart(2,'0')}/${today.getFullYear()}`;
-        let target = $(`.group-container[data-date="${todayStr}"]`).first();
-        if (!target.length) {
-            let closest = null, closestDiff = Infinity;
-            $('.group-container').each(function() {
-                const ds = $(this).data('date'); if (!ds) return;
-                const p = ds.split('/'), d = new Date(p[2], p[1]-1, p[0]); d.setHours(0,0,0,0);
-                const diff = Math.abs(d - today);
-                if (diff < closestDiff) { closestDiff = diff; closest = $(this); }
+            $('#month-tabs').html(html).on('click', '.tab', function () {
+                $('.tab').removeClass('active'); $(this).addClass('active');
+                const m = parseInt($(this).data('month')) || 0, y = parseInt($(this).data('year')) || 0;
+                $(this).data('filter') === 'all' ? loadAllData() : loadDataForMonth(m, y);
             });
-            target = closest;
+            if (isInitial) {
+                if (hasCurrent) loadDataForMonth(currentMonth, currentYear, true);
+                else if (sorted.length > 0) { const f = sorted[0][1]; $('#month-tabs .tab').removeClass('active'); $(`#month-tabs .tab[data-month="${f.month}"][data-year="${f.year}"]`).addClass('active'); loadDataForMonth(f.month, f.year, true); }
+            }
         }
-        if (target?.length) {
-            $('html,body').animate({scrollTop: target.offset().top - 180}, 300);
-            target.addClass('highlight-group'); setTimeout(() => target.removeClass('highlight-group'), 2000);
-        }
-    }
 
-    function parseDate(s) { 
-        if (!s || s.trim() === '') return null;
-        // Handle DD/MM/YYYY format
-        if (s.includes('/')) { 
-            const p = s.split('/'); 
-            if (p.length === 3) {
-                const day = parseInt(p[0], 10);
-                const month = parseInt(p[1], 10) - 1;
-                const year = parseInt(p[2], 10);
-                if (!isNaN(day) && !isNaN(month) && !isNaN(year) && year > 1900 && year < 2100) {
-                    return new Date(year, month, day);
+        function loadDataForMonth(month, year, isInitial = false) {
+            let records = allRecords.filter(r => {
+                // Check main traveler's date (if not hidden)
+                if (!r._mainHidden) {
+                    const d = parseDate(r.doc_date);
+                    if (d && d.getMonth() + 1 === month && d.getFullYear() === year) return true;
+                }
+
+                // Check dependents' dates (for hidden main or to include record if dependent matches)
+                const validDeps = (r.dependents || []).filter(dep => !isExcludedStatus(dep.status));
+                for (let dep of validDeps) {
+                    const dd = parseDate(dep.doc_date);
+                    if (dd && dd.getMonth() + 1 === month && dd.getFullYear() === year) return true;
+                }
+
+                return false;
+            });
+            records.sort((a, b) => {
+                let da, db;
+
+                // For hidden main travelers, use the earliest valid dependent's date
+                if (a._mainHidden && a.dependents?.length) {
+                    const validDeps = a.dependents.filter(d => !isExcludedStatus(d.status) && d.doc_date);
+                    da = validDeps.length > 0 ? parseDate(validDeps[0].doc_date) : parseDate(a.doc_date);
+                } else {
+                    da = parseDate(a.doc_date);
+                }
+
+                if (b._mainHidden && b.dependents?.length) {
+                    const validDeps = b.dependents.filter(d => !isExcludedStatus(d.status) && d.doc_date);
+                    db = validDeps.length > 0 ? parseDate(validDeps[0].doc_date) : parseDate(b.doc_date);
+                } else {
+                    db = parseDate(b.doc_date);
+                }
+
+                // Handle null dates - put at end
+                if (!da && !db) return 0;
+                if (!da) return 1;
+                if (!db) return -1;
+
+                return da - db;
+            });
+            displayRecords(records, isInitial);
+        }
+
+        function loadAllData() {
+            let r = [...allRecords].sort((a, b) => {
+                const da = parseDate(a.doc_date), db = parseDate(b.doc_date);
+                if (!da && !db) return 0;
+                if (!da) return 1;
+                if (!db) return -1;
+                return da - db;
+            });
+            displayRecords(r, false);
+        }
+
+        function displayRecords(records, scrollToToday = false) {
+            $('#groups-container').empty(); currentDisplayedRecords = records;
+            if (!records.length) { $('#empty').show(); updateStats(0, 0, 0, 0, {}); return; }
+            $('#empty').hide(); renderGroups(records);
+            let total = 0, full = 0, appt = 0, completed = 0, assigned = {};
+            records.forEach(r => {
+                if (!r._mainHidden) {
+                    total++;
+                    const pkg = (r.package || '').toLowerCase();
+                    if (pkg.includes('full') || pkg.includes('fast')) full++; else if (pkg.includes('appointment')) appt++;
+                    const st = (r.status || '').toLowerCase();
+                    if (st === 'completed' || st === 'visa approved') completed++;
+                    const m = (r.notes || '').match(/\[\[\s*Documentation Support Assign to\s+(.+?)\s*\]\]/);
+                    if (m) assigned[m[1].trim()] = (assigned[m[1].trim()] || 0) + 1;
+                }
+                (r.dependents || []).forEach(dep => {
+                    if (isExcludedStatus(dep.status)) return;
+                    total++;
+                    const dpkg = (dep.package || r.package || '').toLowerCase();
+                    if (dpkg.includes('full') || dpkg.includes('fast')) full++; else if (dpkg.includes('appointment')) appt++;
+                    const dst = (dep.status || '').toLowerCase();
+                    if (dst === 'completed' || dst === 'visa approved') completed++;
+                });
+            });
+            updateStats(total, full, appt, completed, assigned);
+            if (scrollToToday) setTimeout(scrollToCurrentDate, 100);
+        }
+
+        function scrollToCurrentDate() {
+            const today = new Date(); today.setHours(0, 0, 0, 0);
+            const todayStr = `${String(today.getDate()).padStart(2, '0')}/${String(today.getMonth() + 1).padStart(2, '0')}/${today.getFullYear()}`;
+            let target = $(`.group-container[data-date="${todayStr}"]`).first();
+            if (!target.length) {
+                let closest = null, closestDiff = Infinity;
+                $('.group-container').each(function () {
+                    const ds = $(this).data('date'); if (!ds) return;
+                    const p = ds.split('/'), d = new Date(p[2], p[1] - 1, p[0]); d.setHours(0, 0, 0, 0);
+                    const diff = Math.abs(d - today);
+                    if (diff < closestDiff) { closestDiff = diff; closest = $(this); }
+                });
+                target = closest;
+            }
+            if (target?.length) {
+                $('html,body').animate({ scrollTop: target.offset().top - 180 }, 300);
+                target.addClass('highlight-group'); setTimeout(() => target.removeClass('highlight-group'), 2000);
+            }
+        }
+
+        function parseDate(s) {
+            if (!s || s.trim() === '') return null;
+            // Handle DD/MM/YYYY format
+            if (s.includes('/')) {
+                const p = s.split('/');
+                if (p.length === 3) {
+                    const day = parseInt(p[0], 10);
+                    const month = parseInt(p[1], 10) - 1;
+                    const year = parseInt(p[2], 10);
+                    if (!isNaN(day) && !isNaN(month) && !isNaN(year) && year > 1900 && year < 2100) {
+                        return new Date(year, month, day);
+                    }
                 }
             }
-        }
-        // Handle YYYY-MM-DD format
-        if (s.includes('-') && s.length === 10) {
-            const p = s.split('-');
-            if (p.length === 3 && p[0].length === 4) {
-                const year = parseInt(p[0], 10);
-                const month = parseInt(p[1], 10) - 1;
-                const day = parseInt(p[2], 10);
-                if (!isNaN(day) && !isNaN(month) && !isNaN(year) && year > 1900 && year < 2100) {
-                    return new Date(year, month, day);
+            // Handle YYYY-MM-DD format
+            if (s.includes('-') && s.length === 10) {
+                const p = s.split('-');
+                if (p.length === 3 && p[0].length === 4) {
+                    const year = parseInt(p[0], 10);
+                    const month = parseInt(p[1], 10) - 1;
+                    const day = parseInt(p[2], 10);
+                    if (!isNaN(day) && !isNaN(month) && !isNaN(year) && year > 1900 && year < 2100) {
+                        return new Date(year, month, day);
+                    }
                 }
             }
+            return null;
         }
-        return null; 
-    }
 
-    function updateStats(total, full, appt, completed, assigned) {
-        $('#stat-total').text(total); $('#stat-fullsupport').text(full); $('#stat-appointment').text(appt); $('#stat-completed').text(completed);
-        const users = Object.entries(assigned).filter(([,c]) => c > 0).map(([u,c]) => `<span class="assigned-user"><span class="user-name">${u}:</span> <span class="user-count">${c}</span></span>`);
-        $('#assigned-container').html(users.length ? users.join('<span class="assigned-separator">,</span> ') : '<span style="color:var(--text-muted)">-</span>');
-    }
+        function updateStats(total, full, appt, completed, assigned) {
+            $('#stat-total').text(total); $('#stat-fullsupport').text(full); $('#stat-appointment').text(appt); $('#stat-completed').text(completed);
+            const users = Object.entries(assigned).filter(([, c]) => c > 0).map(([u, c]) => `<span class="assigned-user"><span class="user-name">${u}:</span> <span class="user-count">${c}</span></span>`);
+            $('#assigned-container').html(users.length ? users.join('<span class="assigned-separator">,</span> ') : '<span style="color:var(--text-muted)">-</span>');
+        }
 
-    function getColorClass(status, pkg, notes) {
-        const st = (status || '').toLowerCase().trim(), nt = (notes || '').toLowerCase();
-        const isAppt = pkg.includes('appointment') && !pkg.includes('full') && !pkg.includes('fast');
-        if (isAppt) return 'grey';
-        if (st === 'cancelled' || st === 'refunded' || nt.includes('cancel')) return 'red';
-        if (st === 'reschedule') return 'yellow';
-        if (st === 'completed' || st === 'visa approved') return 'green';
-        if (st === 'doc') return 'blue';
-        return 'grey';
-    }
+        function getColorClass(status, pkg, notes) {
+            const st = (status || '').toLowerCase().trim(), nt = (notes || '').toLowerCase();
+            const isAppt = pkg.includes('appointment') && !pkg.includes('full') && !pkg.includes('fast');
+            if (isAppt) return 'grey';
+            if (st === 'cancelled' || st === 'refunded' || nt.includes('cancel')) return 'red';
+            if (st === 'reschedule') return 'yellow';
+            if (st === 'completed' || st === 'visa approved') return 'green';
+            if (st === 'doc') return 'blue';
+            return 'grey';
+        }
 
-    function getStatusClass(s) {
-        const st = (s || '').toLowerCase().trim();
-        if (st === 'cancelled' || st === 'refunded') return 'status-cancelled';
-        if (st === 'reschedule') return 'status-reschedule';
-        if (st === 'doc') return 'status-doc';
-        if (st === 'visa approved') return 'status-visa-approved';
-        if (st.includes('hold')) return 'status-hold';
-        return 'status-completed';
-    }
+        function getStatusClass(s) {
+            const st = (s || '').toLowerCase().trim();
+            if (st === 'cancelled' || st === 'refunded') return 'status-cancelled';
+            if (st === 'reschedule') return 'status-reschedule';
+            if (st === 'doc') return 'status-doc';
+            if (st === 'visa approved') return 'status-visa-approved';
+            if (st.includes('hold')) return 'status-hold';
+            return 'status-completed';
+        }
 
-    function getPkgHtml(p) {
-        const l = (p || '').toLowerCase();
-        if (l.includes('fast') && l.includes('full')) return `<span class="package package-fast-full">Fast Track Full</span>`;
-        if (l.includes('full')) return `<span class="package package-full">Full Support</span>`;
-        if (l.includes('fast')) return `<span class="package package-fast-appointment">Fast Track</span>`;
-        if (l.includes('appointment')) return `<span class="package package-appointment">Appointment</span>`;
-        return `<span class="package">${p || '-'}</span>`;
-    }
+        function getPkgHtml(p) {
+            const l = (p || '').toLowerCase();
+            if (l.includes('fast') && l.includes('full')) return `<span class="package package-fast-full">Fast Track Full</span>`;
+            if (l.includes('full')) return `<span class="package package-full">Full Support</span>`;
+            if (l.includes('fast')) return `<span class="package package-fast-appointment">Fast Track</span>`;
+            if (l.includes('appointment')) return `<span class="package package-appointment">Appointment</span>`;
+            return `<span class="package">${p || '-'}</span>`;
+        }
 
-    function getPayHtml(p) {
-        const l = (p || '').toLowerCase();
-        if (l === 'paid') return `<span class="payment payment-paid">Paid</span>`;
-        if (l === 'pending') return `<span class="payment payment-pending">Pending</span>`;
-        if (l === 'partial') return `<span class="payment payment-partial">Partial</span>`;
-        if (l === 'not required') return `<span class="payment payment-not-required">Not Required</span>`;
-        return `<span class="payment">${p || '-'}</span>`;
-    }
+        function getPayHtml(p) {
+            const l = (p || '').toLowerCase();
+            if (l === 'paid') return `<span class="payment payment-paid">Paid</span>`;
+            if (l === 'pending') return `<span class="payment payment-pending">Pending</span>`;
+            if (l === 'partial') return `<span class="payment payment-partial">Partial</span>`;
+            if (l === 'not required') return `<span class="payment payment-not-required">Not Required</span>`;
+            return `<span class="payment">${p || '-'}</span>`;
+        }
 
-    function getProgressHtml(status, prog, id, type, isAppt) {
-        if (isAppt) return '-';
-        let p = prog || 0;
-        const st = (status || '').toLowerCase();
-        if (p === 0) { if (st === 'completed' || st === 'visa approved') p = 100; else if (st === 'doc') p = 60; else if (st === 'reschedule') p = 50; }
-        const icon = p >= 40 ? `<a href="form_data_viewer.html?id=${id}&type=${type}" target="_blank" class="form-data-icon" title="View Form"><i class="fas fa-file-alt"></i></a>` : '';
-        return `<div class="progress-wrapper"><div class="progress-bar"><div class="progress-fill" style="width:${p}%"></div></div><span class="progress-text">${p}%</span>${icon}</div>`;
-    }
+        function getProgressHtml(status, prog, id, type, isAppt) {
+            if (isAppt) return '-';
+            let p = prog || 0;
+            const st = (status || '').toLowerCase();
+            if (p === 0) { if (st === 'completed' || st === 'visa approved') p = 100; else if (st === 'doc') p = 60; else if (st === 'reschedule') p = 50; }
+            const icon = p >= 40 ? `<a href="form_data_viewer.html?id=${id}&type=${type}" target="_blank" class="form-data-icon" title="View Form"><i class="fas fa-file-alt"></i></a>` : '';
+            return `<div class="progress-wrapper"><div class="progress-bar"><div class="progress-fill" style="width:${p}%"></div></div><span class="progress-text">${p}%</span>${icon}</div>`;
+        }
 
-    function getWaHtml(phone) {
-        const clean = (phone || '').replace(/[^0-9+]/g, '');
-        if (!clean) return '-';
-        const num = clean.startsWith('+') ? clean.substring(1) : clean;
-        return `<a href="https://wa.me/${num}" target="_blank" class="whatsapp-link"><i class="fab fa-whatsapp"></i> ${phone}</a>`;
-    }
+        function getWaHtml(phone) {
+            const clean = (phone || '').replace(/[^0-9+]/g, '');
+            if (!clean) return '-';
+            const num = clean.startsWith('+') ? clean.substring(1) : clean;
+            return `<a href="https://wa.me/${num}" target="_blank" class="whatsapp-link"><i class="fab fa-whatsapp"></i> ${phone}</a>`;
+        }
 
-    function getAssignHtml(id, notes, isAppt, table = 'travelers') {
-        if (isAppt) return '-';
-        const m = notes.match(/\[\[\s*Documentation Support Assign to\s+(.+?)\s*\]\]/);
-        const assigned = m ? m[1].trim() : '';
-        let opts = '<option value="">-- Select --</option>';
-        usersList.forEach(u => { opts += `<option value="${u.username}" ${u.username === assigned ? 'selected' : ''}>${u.username}</option>`; });
-        const dt = table === 'dependents' ? 'data-table="dependents"' : '';
-        return `<select class="assign-select ${assigned ? 'has-value' : ''}" data-id="${id}" ${dt} data-current-notes="${notes.replace(/"/g,'&quot;')}">${opts}</select>`;
-    }
+        function getAssignHtml(id, notes, isAppt, table = 'travelers') {
+            if (isAppt) return '-';
+            const m = notes.match(/\[\[\s*Documentation Support Assign to\s+(.+?)\s*\]\]/);
+            const assigned = m ? m[1].trim() : '';
+            let opts = '<option value="">-- Select --</option>';
+            usersList.forEach(u => { opts += `<option value="${u.username}" ${u.username === assigned ? 'selected' : ''}>${u.username}</option>`; });
+            const dt = table === 'dependents' ? 'data-table="dependents"' : '';
+            return `<select class="assign-select ${assigned ? 'has-value' : ''}" data-id="${id}" ${dt} data-current-notes="${notes.replace(/"/g, '&quot;')}">${opts}</select>`;
+        }
 
-    function getAihfcHtml(id, notes, isAppt, table = 'travelers') {
-        if (isAppt) return '-';
-        const dt = table === 'dependents' ? 'data-table="dependents"' : '';
-        const items = ['A', 'I', 'H', 'F', 'C'];
-        const labels = { A: 'Application Form', I: 'Insurance', H: 'Hotel/Accommodation', F: 'Flight', C: 'Cover Letter' };
-        
-        // Check for completed items in notes - format: [AIHFC: A,I,H]
-        const match = notes.match(/\[AIHFC:\s*([A-Z,\s]*)\]/);
-        const completed = match ? match[1].replace(/\s/g, '').split(',').filter(x => x) : [];
-        
-        let html = '<div class="aihfc-wrapper">';
-        items.forEach(key => {
-            const isActive = completed.includes(key);
-            html += `<button class="aihfc-btn ${isActive ? 'active' : ''}" data-id="${id}" data-key="${key}" ${dt} title="${labels[key]}">${key}</button>`;
-        });
-        html += '</div>';
-        return html;
-    }
+        function getAihfcHtml(id, notes, isAppt, table = 'travelers') {
+            if (isAppt) return '-';
+            const dt = table === 'dependents' ? 'data-table="dependents"' : '';
+            const items = ['A', 'I', 'H', 'F', 'C'];
+            const labels = { A: 'Application Form', I: 'Insurance', H: 'Hotel/Accommodation', F: 'Flight', C: 'Cover Letter' };
 
-    function renderGroups(records) {
-        const container = $('#groups-container');
-        let prevDate = '', rowNum = 0;
-        records.forEach(r => {
-            if (!r) return;
-            
-            const validDeps = (r.dependents || []).filter(d => !isExcludedStatus(d.status));
-            
-            // Determine the display date - use first valid dependent's date if main is hidden
-            let docDate = r.doc_date || '';
-            if (r._mainHidden && validDeps.length > 0 && validDeps[0].doc_date) {
-                docDate = validDeps[0].doc_date;
-            }
-            
-            // Skip records with empty dates
-            if (!docDate || docDate.trim() === '') {
-                console.warn('Skipping record with empty date:', r.first_name, r.last_name);
-                return;
-            }
-            
-            const hasCo = validDeps.length > 0;
-            const totalInGroup = (r._mainHidden ? 0 : 1) + validDeps.length;
+            // Check for completed items in notes - format: [AIHFC: A,I,H]
+            const match = notes.match(/\[AIHFC:\s*([A-Z,\s]*)\]/);
+            const completed = match ? match[1].replace(/\s/g, '').split(',').filter(x => x) : [];
 
-            if (docDate !== prevDate) {
-                const d = parseDate(docDate);
-                const dayName = d.toLocaleDateString('en-GB',{weekday:'short'});
-                const formatted = d.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'});
-                container.append(`<div class="date-header"><div class="date-header-line"></div><div class="date-header-text"><i class="far fa-calendar-alt"></i> ${dayName}, ${formatted}</div><div class="date-header-line"></div></div>`);
-                prevDate = docDate;
-            }
+            let html = '<div class="aihfc-wrapper">';
+            items.forEach(key => {
+                const isActive = completed.includes(key);
+                html += `<button class="aihfc-btn ${isActive ? 'active' : ''}" data-id="${id}" data-key="${key}" ${dt} title="${labels[key]}">${key}</button>`;
+            });
+            html += '</div>';
+            return html;
+        }
 
-            const status = (r.status || '').toLowerCase().trim();
-            const pkgCheck = (r.package || '').toLowerCase();
-            const notes = r.notes || '';
-            const colorClass = getColorClass(status, pkgCheck, notes);
-            const isAppt = pkgCheck.includes('appointment') && !pkgCheck.includes('full') && !pkgCheck.includes('fast');
+        function renderGroups(records) {
+            const container = $('#groups-container');
+            let prevDate = '', rowNum = 0;
+            records.forEach(r => {
+                if (!r) return;
 
-            let html = `<div class="group-container status-${colorClass} ${hasCo ? '' : 'single-traveler'}" data-id="${r.id}" data-date="${docDate}"><table>`;
+                const validDeps = (r.dependents || []).filter(d => !isExcludedStatus(d.status));
 
-            if (!r._mainHidden) {
-                rowNum++;
-                const name = `${r.first_name || ''} ${r.last_name || ''}`.trim().toUpperCase();
-                const agent = r.assigned_to || r.created_by || '';
-                const highlighted = agent.toLowerCase().includes('salija');
-                const groupBadge = hasCo ? `<span class="group-badge"><i class="fas fa-users"></i> ${totalInGroup}</span>` : '';
-                const toggle = hasCo ? `<span class="group-toggle" data-group-id="${r.id}"><i class="fas fa-chevron-down"></i></span>` : '';
-                const nameHtml = highlighted ? `<span class="name name-highlighted">${name}</span>${groupBadge}` : `<span class="name">${name}</span>${groupBadge}`;
-                const agentHtml = agent ? `<span class="agent">(${agent})</span>` : '';
-                const route = `${r.visa_center || 'London'} - ${r.travel_country || ''} - ${r.visa_type || 'Tourist'}`;
-                const statusClass = getStatusClass(r.status);
-                const statusText = r.status || 'Completed';
+                // Determine the display date - use first valid dependent's date if main is hidden
+                let docDate = r.doc_date || '';
+                if (r._mainHidden && validDeps.length > 0 && validDeps[0].doc_date) {
+                    docDate = validDeps[0].doc_date;
+                }
 
-                html += `<tr class="group-header" data-id="${r.id}">
+                // Skip records with empty dates
+                if (!docDate || docDate.trim() === '') {
+                    console.warn('Skipping record with empty date:', r.first_name, r.last_name);
+                    return;
+                }
+
+                const hasCo = validDeps.length > 0;
+                const totalInGroup = (r._mainHidden ? 0 : 1) + validDeps.length;
+
+                if (docDate !== prevDate) {
+                    const d = parseDate(docDate);
+                    const dayName = d.toLocaleDateString('en-GB', { weekday: 'short' });
+                    const formatted = d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+                    container.append(`<div class="date-header"><div class="date-header-line"></div><div class="date-header-text"><i class="far fa-calendar-alt"></i> ${dayName}, ${formatted}</div><div class="date-header-line"></div></div>`);
+                    prevDate = docDate;
+                }
+
+                const status = (r.status || '').toLowerCase().trim();
+                const pkgCheck = (r.package || '').toLowerCase();
+                const notes = r.notes || '';
+                const colorClass = getColorClass(status, pkgCheck, notes);
+                const isAppt = pkgCheck.includes('appointment') && !pkgCheck.includes('full') && !pkgCheck.includes('fast');
+
+                let html = `<div class="group-container status-${colorClass} ${hasCo ? '' : 'single-traveler'}" data-id="${r.id}" data-date="${docDate}"><table>`;
+
+                if (!r._mainHidden) {
+                    rowNum++;
+                    const name = `${r.first_name || ''} ${r.last_name || ''}`.trim().toUpperCase();
+                    const agent = r.assigned_to || r.created_by || '';
+                    const highlighted = agent.toLowerCase().includes('salija');
+                    const groupBadge = hasCo ? `<span class="group-badge"><i class="fas fa-users"></i> ${totalInGroup}</span>` : '';
+                    const toggle = hasCo ? `<span class="group-toggle" data-group-id="${r.id}"><i class="fas fa-chevron-down"></i></span>` : '';
+                    const nameHtml = highlighted ? `<span class="name name-highlighted">${name}</span>${groupBadge}` : `<span class="name">${name}</span>${groupBadge}`;
+                    const agentHtml = agent ? `<span class="agent">(${agent})</span>` : '';
+                    const route = `${r.visa_center || 'London'} - ${r.travel_country || ''} - ${r.visa_type || 'Tourist'}`;
+                    const statusClass = getStatusClass(r.status);
+                    const statusText = r.status || 'Completed';
+
+                    html += `<tr class="group-header" data-id="${r.id}">
                     <td><span class="number-cell">${hasCo ? toggle : '<span class="toggle-spacer"></span>'}<span class="main-indicator">${rowNum}</span></span></td>
                     <td>${docDate}</td>
                     <td title="${name}">${nameHtml}${agentHtml}</td>
@@ -708,27 +1903,27 @@ $(function() {
                     <td>${getAihfcHtml(r.id, notes, isAppt)}</td>
                     <td>${getWaHtml(r.whatsapp_contact || r.contact_number)}</td>
                     <td>${getPayHtml(r.payment_status)}</td>
-                    <td><div class="notes-wrapper"><span class="notes-text ${notes.toLowerCase().includes('error') ? 'error' : ''}" data-id="${r.id}">${notes}</span><button class="notes-edit-btn" data-id="${r.id}" data-notes="${notes.replace(/"/g,'&quot;')}" title="Edit"><i class="fas fa-edit"></i></button></div></td>
+                    <td><div class="notes-wrapper"><span class="notes-text ${notes.toLowerCase().includes('error') ? 'error' : ''}" data-id="${r.id}">${notes}</span><button class="notes-edit-btn" data-id="${r.id}" data-notes="${notes.replace(/"/g, '&quot;')}" title="Edit"><i class="fas fa-edit"></i></button></div></td>
                 </tr>`;
-            }
+                }
 
-            validDeps.forEach((dep, idx) => {
-                rowNum++;
-                const depName = `${dep.first_name || ''} ${dep.last_name || ''}`.trim().toUpperCase();
-                const depAgent = dep.assigned_to || dep.created_by || r.assigned_to || r.created_by || '';
-                const depDate = dep.doc_date || docDate;
-                const depRoute = `${dep.visa_center || r.visa_center || 'London'} - ${dep.travel_country || r.travel_country || ''} - ${dep.visa_type || r.visa_type || 'Tourist'}`;
-                const depStatus = dep.status || r.status || 'Completed';
-                const depStatusClass = getStatusClass(depStatus);
-                const depPkg = dep.package || r.package || '';
-                const depPkgLower = depPkg.toLowerCase();
-                const depIsAppt = depPkgLower.includes('appointment') && !depPkgLower.includes('full') && !depPkgLower.includes('fast');
-                const depNotes = dep.notes || '';
-                const depPhone = dep.whatsapp_contact || dep.contact_number || '';
-                const depPayment = dep.payment_status || r.payment_status || '';
-                const depColorClass = getColorClass(depStatus, depPkgLower, depNotes);
+                validDeps.forEach((dep, idx) => {
+                    rowNum++;
+                    const depName = `${dep.first_name || ''} ${dep.last_name || ''}`.trim().toUpperCase();
+                    const depAgent = dep.assigned_to || dep.created_by || r.assigned_to || r.created_by || '';
+                    const depDate = dep.doc_date || docDate;
+                    const depRoute = `${dep.visa_center || r.visa_center || 'London'} - ${dep.travel_country || r.travel_country || ''} - ${dep.visa_type || r.visa_type || 'Tourist'}`;
+                    const depStatus = dep.status || r.status || 'Completed';
+                    const depStatusClass = getStatusClass(depStatus);
+                    const depPkg = dep.package || r.package || '';
+                    const depPkgLower = depPkg.toLowerCase();
+                    const depIsAppt = depPkgLower.includes('appointment') && !depPkgLower.includes('full') && !depPkgLower.includes('fast');
+                    const depNotes = dep.notes || '';
+                    const depPhone = dep.whatsapp_contact || dep.contact_number || '';
+                    const depPayment = dep.payment_status || r.payment_status || '';
+                    const depColorClass = getColorClass(depStatus, depPkgLower, depNotes);
 
-                html += `<tr class="cotraveler-row ${depColorClass}" data-id="${dep.id}">
+                    html += `<tr class="cotraveler-row ${depColorClass}" data-id="${dep.id}">
                     <td><span class="number-cell"><span class="toggle-spacer"></span><span class="main-indicator">${rowNum}</span></span></td>
                     <td>${depDate}</td>
                     <td title="${depName}"><span class="cotraveler-name">${depName}</span>${depAgent ? `<span class="agent">(${depAgent})</span>` : ''}</td>
@@ -740,213 +1935,225 @@ $(function() {
                     <td>${getAihfcHtml(dep.id, depNotes, depIsAppt, 'dependents')}</td>
                     <td>${getWaHtml(depPhone)}</td>
                     <td>${getPayHtml(depPayment)}</td>
-                    <td><div class="notes-wrapper"><span class="notes-text ${depNotes.toLowerCase().includes('error') ? 'error' : ''}" data-id="${dep.id}">${depNotes}</span><button class="notes-edit-btn" data-id="${dep.id}" data-table="dependents" data-notes="${depNotes.replace(/"/g,'&quot;')}" title="Edit"><i class="fas fa-edit"></i></button></div></td>
+                    <td><div class="notes-wrapper"><span class="notes-text ${depNotes.toLowerCase().includes('error') ? 'error' : ''}" data-id="${dep.id}">${depNotes}</span><button class="notes-edit-btn" data-id="${dep.id}" data-table="dependents" data-notes="${depNotes.replace(/"/g, '&quot;')}" title="Edit"><i class="fas fa-edit"></i></button></div></td>
                 </tr>`;
+                });
+
+                html += '</table></div>';
+                container.append(html);
             });
+        }
 
-            html += '</table></div>';
-            container.append(html);
+        $(document).on('click', '.group-toggle', function (e) {
+            e.stopPropagation();
+            const gid = $(this).data('group-id');
+            $(`.group-container[data-id="${gid}"]`).toggleClass('collapsed');
+            $(this).toggleClass('collapsed');
         });
-    }
 
-    $(document).on('click', '.group-toggle', function(e) {
-        e.stopPropagation();
-        const gid = $(this).data('group-id');
-        $(`.group-container[data-id="${gid}"]`).toggleClass('collapsed');
-        $(this).toggleClass('collapsed');
-    });
+        // AIHFC button click handler
+        $(document).on('click', '.aihfc-btn', function () {
+            const $btn = $(this);
+            if ($btn.prop('disabled')) return; // Prevent double-clicks
+            $btn.prop('disabled', true);
 
-    // AIHFC button click handler
-    $(document).on('click', '.aihfc-btn', function() {
-        const $btn = $(this);
-        if ($btn.prop('disabled')) return; // Prevent double-clicks
-        $btn.prop('disabled', true);
-        
-        const id = $btn.data('id');
-        const key = $btn.data('key');
-        const table = $btn.data('table') || 'travelers';
-        const isActive = $btn.hasClass('active');
-        
-        // Get current notes from data attribute (more reliable than text)
-        const $notesBtn = $(`.notes-edit-btn[data-id="${id}"]`);
-        let currentNotes = $notesBtn.data('notes') || '';
-        if (typeof currentNotes !== 'string') currentNotes = String(currentNotes);
-        
-        // Parse existing AIHFC tag
-        const match = currentNotes.match(/\[AIHFC:\s*([A-Z,\s]*)\]/);
-        let completed = match ? match[1].replace(/\s/g, '').split(',').filter(x => x) : [];
-        
-        if (isActive) {
-            // Remove key
-            completed = completed.filter(k => k !== key);
-            $btn.removeClass('active');
-        } else {
-            // Add key
-            if (!completed.includes(key)) completed.push(key);
-            $btn.addClass('active');
-        }
-        
-        // Sort in AIHFC order
-        const order = ['A', 'I', 'H', 'F', 'C'];
-        completed.sort((a, b) => order.indexOf(a) - order.indexOf(b));
-        
-        // Remove old tag and add new one
-        currentNotes = currentNotes.replace(/\[AIHFC:\s*[A-Z,\s]*\]\s*/g, '').trim();
-        if (completed.length > 0) {
-            const newTag = `[AIHFC: ${completed.join(',')}]`;
-            currentNotes = currentNotes ? `${currentNotes} ${newTag}` : newTag;
-        }
-        
-        const api = table === 'dependents' ? 'api/dependents.php?action=update_field' : 'api/travelers.php?action=update_field';
-        
-        $.post(api, { id: id, field: 'notes', value: currentNotes }, function(res) {
-            if (res.status === 'success') {
-                $(`.notes-text[data-id="${id}"]`).text(currentNotes);
-                $(`.notes-edit-btn[data-id="${id}"]`).data('notes', currentNotes);
-                $(`.assign-select[data-id="${id}"]`).data('current-notes', currentNotes);
-                
-                if (table === 'travelers') {
-                    const rec = allRecords.find(r => r.id == id);
-                    if (rec) rec.notes = currentNotes;
-                } else {
-                    // Update dependent notes in allRecords
-                    for (let rec of allRecords) {
-                        const dep = (rec.dependents || []).find(d => d.id == id);
-                        if (dep) { dep.notes = currentNotes; break; }
-                    }
-                }
-                
-                const $group = $(`.group-container`).has(`[data-id="${id}"]`);
-                $group.addClass('highlight-group');
-                setTimeout(() => $group.removeClass('highlight-group'), 1000);
+            const id = $btn.data('id');
+            const key = $btn.data('key');
+            const table = $btn.data('table') || 'travelers';
+            const isActive = $btn.hasClass('active');
+
+            // Get current notes from data attribute (more reliable than text)
+            const $notesBtn = $(`.notes-edit-btn[data-id="${id}"]`);
+            let currentNotes = $notesBtn.data('notes') || '';
+            if (typeof currentNotes !== 'string') currentNotes = String(currentNotes);
+
+            // Parse existing AIHFC tag
+            const match = currentNotes.match(/\[AIHFC:\s*([A-Z,\s]*)\]/);
+            let completed = match ? match[1].replace(/\s/g, '').split(',').filter(x => x) : [];
+
+            if (isActive) {
+                // Remove key
+                completed = completed.filter(k => k !== key);
+                $btn.removeClass('active');
             } else {
-                $btn.toggleClass('active');
-                alert('Failed to save');
+                // Add key
+                if (!completed.includes(key)) completed.push(key);
+                $btn.addClass('active');
             }
-            $btn.prop('disabled', false);
-        }, 'json').fail(function() {
-            $btn.toggleClass('active');
-            alert('Error saving');
-            $btn.prop('disabled', false);
-        });
-    });
 
-    function exportCSV() {
-        if (!currentDisplayedRecords.length) { alert('No data to export'); return; }
-        const headers = ['#','Date','Name','Agent','Assigned To','Route','Status','Package','Progress %','WhatsApp','Payment','Notes'];
-        const rows = []; let num = 0;
-        currentDisplayedRecords.forEach(r => {
-            if (!r._mainHidden) {
-                num++;
-                const m = (r.notes || '').match(/\[\[\s*Documentation Support Assign to\s+(.+?)\s*\]\]/);
-                let prog = r.progress_percentage || 0;
-                const st = (r.status || '').toLowerCase();
-                if (prog === 0) { if (st === 'completed' || st === 'visa approved') prog = 100; else if (st === 'doc') prog = 60; }
-                rows.push([num, r.doc_date || '', `${r.first_name || ''} ${r.last_name || ''}`.trim(), r.assigned_to || r.created_by || '', m ? m[1].trim() : '', `${r.visa_center || 'London'} - ${r.travel_country || ''} - ${r.visa_type || 'Tourist'}`, r.status || '', r.package || '', prog + '%', r.whatsapp_contact || r.contact_number || '', r.payment_status || '', (r.notes || '').replace(/"/g,'""')]);
+            // Sort in AIHFC order
+            const order = ['A', 'I', 'H', 'F', 'C'];
+            completed.sort((a, b) => order.indexOf(a) - order.indexOf(b));
+
+            // Remove old tag and add new one
+            currentNotes = currentNotes.replace(/\[AIHFC:\s*[A-Z,\s]*\]\s*/g, '').trim();
+            if (completed.length > 0) {
+                const newTag = `[AIHFC: ${completed.join(',')}]`;
+                currentNotes = currentNotes ? `${currentNotes} ${newTag}` : newTag;
             }
-            (r.dependents || []).filter(d => !isExcludedStatus(d.status)).forEach(dep => {
-                num++;
-                const dm = (dep.notes || '').match(/\[\[\s*Documentation Support Assign to\s+(.+?)\s*\]\]/);
-                let dprog = dep.progress_percentage || 0;
-                const dst = (dep.status || '').toLowerCase();
-                if (dprog === 0) { if (dst === 'completed' || dst === 'visa approved') dprog = 100; else if (dst === 'doc') dprog = 60; }
-                rows.push([num, dep.doc_date || r.doc_date || '', '  → ' + `${dep.first_name || ''} ${dep.last_name || ''}`.trim(), dep.assigned_to || dep.created_by || '', dm ? dm[1].trim() : '', `${dep.visa_center || r.visa_center || 'London'} - ${dep.travel_country || r.travel_country || ''} - ${dep.visa_type || r.visa_type || 'Tourist'}`, dep.status || r.status || '', dep.package || r.package || '', dprog + '%', dep.whatsapp_contact || dep.contact_number || '', dep.payment_status || r.payment_status || '', (dep.notes || '').replace(/"/g,'""')]);
+
+            const payload = { notes: currentNotes };
+            const url = VaultAuth.API_BASE_URL + (table === 'dependents' ? `/dependents/${id}` : `/travelers/${id}`);
+
+            VaultAuth.apiCall({ url: url, method: 'PATCH', data: JSON.stringify(payload) })
+                .done(function (res) {
+                    if (res.status === 'success' || res.id) {
+                        $(`.notes-text[data-id="${id}"]`).text(currentNotes);
+                        $(`.notes-edit-btn[data-id="${id}"]`).data('notes', currentNotes);
+                        $(`.assign-select[data-id="${id}"]`).data('current-notes', currentNotes);
+
+                        if (table === 'travelers') {
+                            const rec = allRecords.find(r => r.id == id);
+                            if (rec) rec.notes = currentNotes;
+                        } else {
+                            // Update dependent notes in allRecords
+                            for (let rec of allRecords) {
+                                const dep = (rec.dependents || []).find(d => d.id == id);
+                                if (dep) { dep.notes = currentNotes; break; }
+                            }
+                        }
+
+                        const $group = $(`.group-container`).has(`[data-id="${id}"]`);
+                        $group.addClass('highlight-group');
+                        setTimeout(() => $group.removeClass('highlight-group'), 1000);
+                    } else {
+                        $btn.toggleClass('active');
+                        alert('Failed to save');
+                    }
+                    $btn.prop('disabled', false);
+                }).fail(function () {
+                    $btn.toggleClass('active');
+                    alert('Error saving');
+                    $btn.prop('disabled', false);
+                });
+        });
+
+        function exportCSV() {
+            if (!currentDisplayedRecords.length) { alert('No data to export'); return; }
+            const headers = ['#', 'Date', 'Name', 'Agent', 'Assigned To', 'Route', 'Status', 'Package', 'Progress %', 'WhatsApp', 'Payment', 'Notes'];
+            const rows = []; let num = 0;
+            currentDisplayedRecords.forEach(r => {
+                if (!r._mainHidden) {
+                    num++;
+                    const m = (r.notes || '').match(/\[\[\s*Documentation Support Assign to\s+(.+?)\s*\]\]/);
+                    let prog = r.progress_percentage || 0;
+                    const st = (r.status || '').toLowerCase();
+                    if (prog === 0) { if (st === 'completed' || st === 'visa approved') prog = 100; else if (st === 'doc') prog = 60; }
+                    rows.push([num, r.doc_date || '', `${r.first_name || ''} ${r.last_name || ''}`.trim(), r.assigned_to || r.created_by || '', m ? m[1].trim() : '', `${r.visa_center || 'London'} - ${r.travel_country || ''} - ${r.visa_type || 'Tourist'}`, r.status || '', r.package || '', prog + '%', r.whatsapp_contact || r.contact_number || '', r.payment_status || '', (r.notes || '').replace(/"/g, '""')]);
+                }
+                (r.dependents || []).filter(d => !isExcludedStatus(d.status)).forEach(dep => {
+                    num++;
+                    const dm = (dep.notes || '').match(/\[\[\s*Documentation Support Assign to\s+(.+?)\s*\]\]/);
+                    let dprog = dep.progress_percentage || 0;
+                    const dst = (dep.status || '').toLowerCase();
+                    if (dprog === 0) { if (dst === 'completed' || dst === 'visa approved') dprog = 100; else if (dst === 'doc') dprog = 60; }
+                    rows.push([num, dep.doc_date || r.doc_date || '', '  → ' + `${dep.first_name || ''} ${dep.last_name || ''}`.trim(), dep.assigned_to || dep.created_by || '', dm ? dm[1].trim() : '', `${dep.visa_center || r.visa_center || 'London'} - ${dep.travel_country || r.travel_country || ''} - ${dep.visa_type || r.visa_type || 'Tourist'}`, dep.status || r.status || '', dep.package || r.package || '', dprog + '%', dep.whatsapp_contact || dep.contact_number || '', dep.payment_status || r.payment_status || '', (dep.notes || '').replace(/"/g, '""')]);
+                });
             });
+            const csv = '\uFEFF' + [headers, ...rows].map(r => r.map(c => `"${c}"`).join(',')).join('\n');
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = `BAT_${($('.tab.active').text() || 'All').replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.csv`;
+            link.click();
+        }
+
+        let editId = null, editTable = 'travelers';
+        $(document).on('click', '.notes-edit-btn', function () { editId = $(this).data('id'); editTable = $(this).data('table') || 'travelers'; $('#notes-textarea').val($(this).data('notes') || ''); $('#notes-modal').css('display', 'flex'); });
+        $('#notes-modal-close, #notes-cancel').click(() => { $('#notes-modal').hide(); editId = null; editTable = 'travelers'; });
+        $('#notes-modal').click(function (e) { if (e.target === this) { $(this).hide(); editId = null; editTable = 'travelers'; } });
+        $('#notes-save').click(function () {
+            if (!editId) return;
+            const newNotes = $('#notes-textarea').val();
+            const payload = { notes: newNotes };
+            const url = VaultAuth.API_BASE_URL + (editTable === 'dependents' ? `/dependents/${editId}` : `/travelers/${editId}`);
+
+            VaultAuth.apiCall({ url: url, method: 'PATCH', data: JSON.stringify(payload) })
+                .done(function (res) {
+                    if (res.status === 'success' || res.id) {
+                        $(`.notes-text[data-id="${editId}"]`).text(newNotes);
+                        $(`.notes-edit-btn[data-id="${editId}"]`).data('notes', newNotes);
+                        if (editTable === 'travelers') { $(`.assign-select[data-id="${editId}"]`).data('current-notes', newNotes); const rec = allRecords.find(r => r.id == editId); if (rec) rec.notes = newNotes; recalcStats(); }
+                        $('#notes-modal').hide(); editId = null; editTable = 'travelers';
+                    } else alert('Failed to save');
+                }).fail(() => alert('Error saving'));
         });
-        const csv = '\uFEFF' + [headers, ...rows].map(r => r.map(c => `"${c}"`).join(',')).join('\n');
-        const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
-        const link = document.createElement('a');
-        link.href = URL.createObjectURL(blob);
-        link.download = `BAT_${($('.tab.active').text() || 'All').replace(/\s+/g,'_')}_${new Date().toISOString().split('T')[0]}.csv`;
-        link.click();
-    }
 
-    let editId = null, editTable = 'travelers';
-    $(document).on('click', '.notes-edit-btn', function() { editId = $(this).data('id'); editTable = $(this).data('table') || 'travelers'; $('#notes-textarea').val($(this).data('notes') || ''); $('#notes-modal').css('display','flex'); });
-    $('#notes-modal-close, #notes-cancel').click(() => { $('#notes-modal').hide(); editId = null; editTable = 'travelers'; });
-    $('#notes-modal').click(function(e) { if (e.target === this) { $(this).hide(); editId = null; editTable = 'travelers'; } });
-    $('#notes-save').click(function() {
-        if (!editId) return;
-        const newNotes = $('#notes-textarea').val();
-        const api = editTable === 'dependents' ? 'api/dependents.php?action=update_field' : 'api/travelers.php?action=update_field';
-        $.post(api, {id: editId, field: 'notes', value: newNotes}, function(res) {
-            if (res.status === 'success') {
-                $(`.notes-text[data-id="${editId}"]`).text(newNotes);
-                $(`.notes-edit-btn[data-id="${editId}"]`).data('notes', newNotes);
-                if (editTable === 'travelers') { $(`.assign-select[data-id="${editId}"]`).data('current-notes', newNotes); const rec = allRecords.find(r => r.id == editId); if (rec) rec.notes = newNotes; recalcStats(); }
-                $('#notes-modal').hide(); editId = null; editTable = 'travelers';
-            } else alert('Failed to save');
-        }, 'json').fail(() => alert('Error saving'));
-    });
+        let statusId = null, statusTable = 'travelers';
+        $(document).on('click', '.status-edit-btn, .status[data-id]', function () { statusId = $(this).data('id'); statusTable = $(this).data('table') || 'travelers'; $('#status-select').val($(this).data('status') || $(this).text().trim() || 'Doc'); $('#status-modal').css('display', 'flex'); });
+        $('#status-modal-close, #status-cancel').click(() => { $('#status-modal').hide(); statusId = null; statusTable = 'travelers'; });
+        $('#status-modal').click(function (e) { if (e.target === this) { $(this).hide(); statusId = null; statusTable = 'travelers'; } });
+        $('#status-save').click(function () {
+            if (!statusId) return;
+            const newStatus = $('#status-select').val();
+            const payload = { status: newStatus };
+            const url = VaultAuth.API_BASE_URL + (statusTable === 'dependents' ? `/dependents/${statusId}` : `/travelers/${statusId}`);
 
-    let statusId = null, statusTable = 'travelers';
-    $(document).on('click', '.status-edit-btn, .status[data-id]', function() { statusId = $(this).data('id'); statusTable = $(this).data('table') || 'travelers'; $('#status-select').val($(this).data('status') || $(this).text().trim() || 'Doc'); $('#status-modal').css('display','flex'); });
-    $('#status-modal-close, #status-cancel').click(() => { $('#status-modal').hide(); statusId = null; statusTable = 'travelers'; });
-    $('#status-modal').click(function(e) { if (e.target === this) { $(this).hide(); statusId = null; statusTable = 'travelers'; } });
-    $('#status-save').click(function() {
-        if (!statusId) return;
-        const newStatus = $('#status-select').val();
-        const api = statusTable === 'dependents' ? 'api/dependents.php?action=update_field' : 'api/travelers.php?action=update_field';
-        $.post(api, {id: statusId, field: 'status', value: newStatus}, function(res) {
-            if (res.status === 'success') {
-                if (statusTable === 'travelers') { const rec = allRecords.find(r => r.id == statusId); if (rec) rec.status = newStatus; }
-                const sc = getStatusClass(newStatus);
-                $(`.status[data-id="${statusId}"]`).text(newStatus).removeClass('status-completed status-cancelled status-reschedule status-doc status-visa-approved status-hold').addClass(sc);
-                $(`.status-edit-btn[data-id="${statusId}"]`).data('status', newStatus);
-                const grp = $(`.group-container`).has(`[data-id="${statusId}"]`);
-                grp.addClass('highlight-group'); setTimeout(() => grp.removeClass('highlight-group'), 1500);
-                recalcStats();
-                $('#status-modal').hide(); statusId = null; statusTable = 'travelers';
-            } else alert('Failed');
-        }, 'json').fail(() => alert('Error'));
-    });
+            VaultAuth.apiCall({ url: url, method: 'PATCH', data: JSON.stringify(payload) })
+                .done(function (res) {
+                    if (res.status === 'success' || res.id) {
+                        if (statusTable === 'travelers') { const rec = allRecords.find(r => r.id == statusId); if (rec) rec.status = newStatus; }
+                        const sc = getStatusClass(newStatus);
+                        $(`.status[data-id="${statusId}"]`).text(newStatus).removeClass('status-completed status-cancelled status-reschedule status-doc status-visa-approved status-hold').addClass(sc);
+                        $(`.status-edit-btn[data-id="${statusId}"]`).data('status', newStatus);
+                        const grp = $(`.group-container`).has(`[data-id="${statusId}"]`);
+                        grp.addClass('highlight-group'); setTimeout(() => grp.removeClass('highlight-group'), 1500);
+                        recalcStats();
+                        $('#status-modal').hide(); statusId = null; statusTable = 'travelers';
+                    } else alert('Failed');
+                }).fail(() => alert('Error'));
+        });
 
-    $(document).on('change', '.assign-select', function() {
-        const user = $(this).val(), $sel = $(this);
-        if (!user) { $sel.removeClass('has-value'); return; }
-        const rid = $(this).data('id'), tbl = $(this).data('table') || 'travelers', curNotes = $(this).data('current-notes') || '';
-        const assignTxt = `[[ Documentation Support Assign to ${user} ]]`;
-        let newNotes = curNotes.replace(/\[\[\s*Documentation Support Assign to.*?\]\]/g, '').trim();
-        newNotes = newNotes ? `${newNotes}\n${assignTxt}` : assignTxt;
-        const api = tbl === 'dependents' ? 'api/dependents.php?action=update_field' : 'api/travelers.php?action=update_field';
-        $.post(api, {id: rid, field: 'notes', value: newNotes}, function(res) {
-            if (res.status === 'success') {
-                $(`.notes-text[data-id="${rid}"]`).text(newNotes);
-                $(`.notes-edit-btn[data-id="${rid}"]`).data('notes', newNotes);
-                $(`.assign-select[data-id="${rid}"]`).data('current-notes', newNotes);
-                $sel.addClass('has-value');
-                if (tbl === 'travelers') { const rec = allRecords.find(r => r.id == rid); if (rec) rec.notes = newNotes; }
-                const grp = $(`.group-container`).has(`[data-id="${rid}"]`);
-                grp.addClass('highlight-group'); setTimeout(() => grp.removeClass('highlight-group'), 1500);
-                recalcStats();
-            } else alert('Failed');
-        }, 'json').fail(() => alert('Error'));
-    });
+        $(document).on('change', '.assign-select', function () {
+            const user = $(this).val(), $sel = $(this);
+            if (!user) { $sel.removeClass('has-value'); return; }
+            const rid = $(this).data('id'), tbl = $(this).data('table') || 'travelers', curNotes = $(this).data('current-notes') || '';
+            const assignTxt = `[[ Documentation Support Assign to ${user} ]]`;
+            let newNotes = curNotes.replace(/\[\[\s*Documentation Support Assign to.*?\]\]/g, '').trim();
+            newNotes = newNotes ? `${newNotes}\n${assignTxt}` : assignTxt;
+            const payload = { notes: newNotes };
+            const url = VaultAuth.API_BASE_URL + (tbl === 'dependents' ? `/dependents/${rid}` : `/travelers/${rid}`);
 
-    function recalcStats() {
-        let total = 0, full = 0, appt = 0, completed = 0, assigned = {};
-        currentDisplayedRecords.forEach(r => {
-            if (!r._mainHidden) {
-                total++;
-                const pkg = (r.package || '').toLowerCase();
-                if (pkg.includes('full') || pkg.includes('fast')) full++; else if (pkg.includes('appointment')) appt++;
-                const st = (r.status || '').toLowerCase();
-                if (st === 'completed' || st === 'visa approved') completed++;
-                const m = (r.notes || '').match(/\[\[\s*Documentation Support Assign to\s+(.+?)\s*\]\]/);
-                if (m) assigned[m[1].trim()] = (assigned[m[1].trim()] || 0) + 1;
-            }
-            (r.dependents || []).forEach(dep => {
-                if (isExcludedStatus(dep.status)) return;
-                total++;
-                const dpkg = (dep.package || r.package || '').toLowerCase();
-                if (dpkg.includes('full') || dpkg.includes('fast')) full++; else if (dpkg.includes('appointment')) appt++;
-                const dst = (dep.status || '').toLowerCase();
-                if (dst === 'completed' || dst === 'visa approved') completed++;
+            VaultAuth.apiCall({ url: url, method: 'PATCH', data: JSON.stringify(payload) })
+                .done(function (res) {
+                    if (res.status === 'success' || res.id) {
+                        $(`.notes-text[data-id="${rid}"]`).text(newNotes);
+                        $(`.notes-edit-btn[data-id="${rid}"]`).data('notes', newNotes);
+                        $(`.assign-select[data-id="${rid}"]`).data('current-notes', newNotes);
+                        $sel.addClass('has-value');
+                        if (tbl === 'travelers') { const rec = allRecords.find(r => r.id == rid); if (rec) rec.notes = newNotes; }
+                        const grp = $(`.group-container`).has(`[data-id="${rid}"]`);
+                        grp.addClass('highlight-group'); setTimeout(() => grp.removeClass('highlight-group'), 1500);
+                        recalcStats();
+                    } else alert('Failed');
+                }).fail(() => alert('Error'));
+        });
+
+        function recalcStats() {
+            let total = 0, full = 0, appt = 0, completed = 0, assigned = {};
+            currentDisplayedRecords.forEach(r => {
+                if (!r._mainHidden) {
+                    total++;
+                    const pkg = (r.package || '').toLowerCase();
+                    if (pkg.includes('full') || pkg.includes('fast')) full++; else if (pkg.includes('appointment')) appt++;
+                    const st = (r.status || '').toLowerCase();
+                    if (st === 'completed' || st === 'visa approved') completed++;
+                    const m = (r.notes || '').match(/\[\[\s*Documentation Support Assign to\s+(.+?)\s*\]\]/);
+                    if (m) assigned[m[1].trim()] = (assigned[m[1].trim()] || 0) + 1;
+                }
+                (r.dependents || []).forEach(dep => {
+                    if (isExcludedStatus(dep.status)) return;
+                    total++;
+                    const dpkg = (dep.package || r.package || '').toLowerCase();
+                    if (dpkg.includes('full') || dpkg.includes('fast')) full++; else if (dpkg.includes('appointment')) appt++;
+                    const dst = (dep.status || '').toLowerCase();
+                    if (dst === 'completed' || dst === 'visa approved') completed++;
+                });
             });
-        });
-        updateStats(total, full, appt, completed, assigned);
-    }
+            updateStats(total, full, appt, completed, assigned);
+        }
 });
-</script>
+    </script>
 </body>
+
 </html>

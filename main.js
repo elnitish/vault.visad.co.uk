@@ -16,7 +16,8 @@ $(document).ready(function () {
         document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/");
     });
 
-    const API_BASE_URL = '/api';
+    const API_BASE_URL = VaultAuth.API_BASE_URL;
+
 
     // Centralized API Request Helper
     function apiRequest(endpoint, method = 'GET', data = null, successCallback, errorCallback) {
@@ -49,7 +50,7 @@ $(document).ready(function () {
 
         console.info(`%c API REQUEST: ${method} ${endpoint}`, 'color: #007bff; font-weight: bold;', data || '(No Payload)');
 
-        $.ajax(ajaxOptions)
+        VaultAuth.apiCall(ajaxOptions)
             .done(function (res) {
                 // Spring Boot returns standard ApiResponse { status: "success", data: ... }
                 // PHP backend returned { ... } directly sometimes or { status: "success", ... }
@@ -63,9 +64,14 @@ $(document).ready(function () {
                 // Handle 403 Forbidden (CSRF/Session Stale)
                 if (jqXHR.status === 403) {
                     console.log('403 Forbidden detected. Clearing stale session...');
-                    // Call logout to invalidate server session
-                    $.get(API_BASE_URL + '/logout');
                     showWarningMessage('Security token refreshed. Please try your action again.');
+                    return;
+                }
+
+                // Handle 401 Unauthorized - auto logout
+                if (jqXHR.status === 401) {
+                    console.log('401 Unauthorized - logging out...');
+                    VaultAuth.logout();
                     return;
                 }
 
@@ -129,7 +135,7 @@ $(document).ready(function () {
     $('#ac-btn').show().on('click', function () { window.location.href = 'accounts.html'; });
     $('#uk-time-container').show();
 
-    $('#login-form').on('submit', function (e) {
+    $('#login-form').on('submit', async function (e) {
         e.preventDefault();
         const $form = $(this);
         const $submitBtn = $form.find('button[type="submit"]');
@@ -141,46 +147,31 @@ $(document).ready(function () {
         // Disable button during login
         $submitBtn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Logging in...');
 
-        apiRequest('/auth/login', 'POST', { username, password }, function (res) {
-            if (res.status === 'success') {
-                $('#login-error').hide();
+        const result = await VaultAuth.login(username, password);
 
-                // DATA: { token: "...", role: "...", username: "..." }
-                const d = res.data;
-                if (d && d.token) {
-                    localStorage.setItem('auth_token', d.token);
-                }
+        if (result.success) {
+            $('#login-error').hide();
 
-                // Trigger galaxy warp effect then transition
-                if (window.triggerGalaxyWarp) {
-                    window.triggerGalaxyWarp(function () {
-                        $('#login-container').hide();
-                        $('#app-container').fadeIn(300);
-                        checkLoginStatus(true);
-                    });
-                } else {
-                    // Fallback if galaxy warp not available
-                    $('#login-container').fadeOut(200, () => {
-                        $('#app-container').fadeIn(200);
-                        checkLoginStatus(true);
-                    });
-                }
+            // Trigger galaxy warp effect then transition
+            if (window.triggerGalaxyWarp) {
+                window.triggerGalaxyWarp(function () {
+                    $('#login-container').hide();
+                    $('#app-container').fadeIn(300);
+                    loadData();
+                });
             } else {
-                $('#login-error').text(res.message || 'Login failed.').show();
-                $submitBtn.prop('disabled', false).html('Login');
+                // Fallback if galaxy warp not available
+                $('#login-container').fadeOut(200, () => {
+                    $('#app-container').fadeIn(200);
+                    loadData();
+                });
             }
-        }, function (xhr, status, error) {
-            console.error('Login Failed:', status, error, xhr.responseText);
-            let msg = 'Connection error. Please try again.';
-            if (xhr.status === 0) {
-                msg = 'Cannot connect to server. Is the backend running?';
-            } else if (xhr.responseJSON && xhr.responseJSON.message) {
-                msg = xhr.responseJSON.message;
-            }
-            $('#login-error').text(msg).show();
+        } else {
+            $('#login-error').text(result.message || 'Login failed.').show();
             $submitBtn.prop('disabled', false).html('Login');
-        });
+        }
     });
+
 
     // --- CLOCK ---
     function updateClock() {

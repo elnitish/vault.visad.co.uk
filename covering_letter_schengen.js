@@ -63,29 +63,30 @@ $(document).ready(function () {
     // Load client data
     loadClientData();
 
-    function loadClientData() {
-        // Check session first
-        $.get('api/auth.php?action=check_session', function (sessionRes) {
-            if (sessionRes.loggedin) {
-                // Fetch client data based on type
-                const endpoint = recordType === 'traveler' ? 'api/travelers.php' : 'api/dependents.php';
+    async function loadClientData() {
+        const session = await VaultAuth.requireAuth();
+        if (!session) return;
 
-                $.get(`${endpoint}?action=get_form_data&id=${recordId}`, function (res) {
-                    if (res.status === 'success' && res.data) {
-                        processClientData(res.data);
-                        generateCoveringLetter();
-                        showLetterSection();
-                    } else {
-                        showError(res.message || 'Failed to load client data.');
-                    }
-                }, 'json').fail(function () {
-                    showError('Server request failed. Please try again.');
-                });
+        const endpoint = recordType === 'traveler' ? `/travelers/${recordId}` : `/dependents/${recordId}`;
+        const url = VaultAuth.API_BASE_URL + endpoint;
+
+        VaultAuth.apiCall({
+            url: url,
+            method: 'GET'
+        }).done(function (res) {
+            if (res.status === 'success' && res.data) {
+                let flatData = { ...res.data };
+                if (flatData.questions) {
+                    flatData = { ...flatData, ...flatData.questions };
+                }
+                processClientData(flatData);
+                generateCoveringLetter();
+                showLetterSection();
             } else {
-                showError('Access Denied. Please log in to the VisaD Vault.');
+                showError(res.message || 'Failed to load client data.');
             }
-        }, 'json').fail(function () {
-            showError('Authentication check failed.');
+        }).fail(function () {
+            showError('Server request failed. Please try again.');
         });
     }
 
@@ -333,32 +334,28 @@ $(document).ready(function () {
 
         console.log('📡 Fetching main traveler with ID:', mainTravelerId);
 
-        // First, fetch the main traveler
-        $.get(`api/travelers.php?action=get_form_data&id=${mainTravelerId}`, function (mainRes) {
+        VaultAuth.apiCall({
+            url: VaultAuth.API_BASE_URL + `/travelers/${mainTravelerId}`,
+            method: 'GET'
+        }).done(function (mainRes) {
             console.log('📥 Main traveler response:', mainRes);
-            console.log('Main traveler ID from API:', mainRes.data?.id, 'Expected:', mainTravelerId);
 
             if (mainRes.status === 'success' && mainRes.data) {
                 // Mark as main traveller
                 mainRes.data.is_main = true;
                 mainRes.data.traveller_type = 'traveler';
-                mainRes.data.id = mainTravelerId; // FORCE the ID to be correct
-                console.log('✅ Main traveler added to list with ID:', mainRes.data.id, 'Name:', mainRes.data.first_name);
+                mainRes.data.id = mainTravelerId;
                 allTravellers.push(mainRes.data);
-            }
 
-            console.log('📡 Fetching dependents for traveler ID:', mainTravelerId);
+                // Handle dependents if included in traveler object (Spring Boot style)
+                let dependents = mainRes.data.dependents || [];
 
-            // Then fetch all dependents
-            $.get(`api/get_dependents.php?traveler_id=${mainTravelerId}`, function (depRes) {
-                console.log('📥 Dependents response:', depRes);
-                console.log('Number of dependents:', depRes.dependents?.length || 0);
+                console.log('📥 Dependents found in traveler object:', dependents.length);
 
-                if (depRes.status === 'success' && depRes.dependents && depRes.dependents.length > 0) {
-                    depRes.dependents.forEach((dep, index) => {
+                if (dependents.length > 0) {
+                    dependents.forEach((dep, index) => {
                         dep.is_main = false;
                         dep.traveller_type = 'dependent';
-                        console.log(`  ✅ Dependent ${index + 1} - ID: ${dep.id}, Name: ${dep.first_name}`);
                         allTravellers.push(dep);
                     });
                 }
@@ -366,42 +363,21 @@ $(document).ready(function () {
                 // Display all travellers together
                 if (allTravellers.length > 0) {
                     console.log('=== FILTERING CO-TRAVELLERS ===');
-                    console.log('All travellers fetched:', allTravellers.map(t => ({ id: t.id, name: t.first_name, is_main: t.is_main })));
-                    console.log('Current viewing - ID:', currentId, '(type:', typeof currentId, ') Type:', recordType);
 
                     // Display all travellers except the current one being viewed
                     const travellersToDisplay = allTravellers.filter(t => {
                         const tId = parseInt(t.id);
                         const currentIdInt = parseInt(currentId);
 
-                        console.log(`  Checking: ${t.first_name || t.name} (ID: ${tId} / ${t.id}, is_main: ${t.is_main})`);
-                        console.log(`    Comparing with current: ${currentIdInt} / ${currentId}, recordType: ${recordType}`);
-                        console.log(`    Types - tId: ${typeof tId}, currentIdInt: ${typeof currentIdInt}`);
-                        console.log(`    Raw comparison: ${t.id} === ${currentId} = ${t.id === currentId}`);
-                        console.log(`    Int comparison: ${tId} === ${currentIdInt} = ${tId === currentIdInt}`);
-                        console.log(`    String comparison: "${String(t.id)}" === "${String(currentId)}" = ${String(t.id) === String(currentId)}`);
-
                         // RULE 1: If viewing main traveller, NEVER show anyone with is_main=true
-                        if (recordType === 'traveler' && t.is_main === true) {
-                            console.log(`    ❌ EXCLUDED - Viewing main traveler, excluding main (is_main=true)`);
-                            return false;
-                        }
+                        if (recordType === 'traveler' && t.is_main === true) return false;
 
                         // RULE 2: If IDs match exactly, exclude
                         const idsMatch = (tId === currentIdInt) || (String(t.id) === String(currentId)) || (t.id == currentId);
-                        console.log(`    IDs Match Check: ${idsMatch}`);
+                        if (idsMatch) return false;
 
-                        if (idsMatch) {
-                            console.log(`    ❌ EXCLUDED - ID matches current user`);
-                            return false;
-                        }
-
-                        console.log(`    ✅ INCLUDED - Will be displayed`);
                         return true;
                     });
-
-                    console.log('Final travellers to display:', travellersToDisplay.map(t => ({ id: t.id, name: t.first_name })));
-                    console.log('=== END FILTERING ===');
 
                     if (travellersToDisplay.length > 0) {
                         // Store globally for letter generation
@@ -422,8 +398,6 @@ $(document).ready(function () {
 
                         console.log('🎉 DISPLAYING CO-TRAVELLERS ABOVE TOOLBAR');
                         displayCoTravellers(travellersToDisplay);
-
-                        // Add quick relationship selectors above the list
                         displayQuickRelationshipSelectors(travellersToDisplay);
 
                         // Regenerate letter if it's already been generated
@@ -438,13 +412,9 @@ $(document).ready(function () {
                 } else {
                     console.log('⚠️ No travellers found at all');
                 }
-
-            }, 'json').fail(function (xhr, status, error) {
-                console.error('❌ Failed to fetch dependents:', error, xhr.responseText);
-            });
-
-        }, 'json').fail(function (xhr, status, error) {
-            console.error('❌ Failed to fetch main traveler:', error, xhr.responseText);
+            }
+        }).fail(function (xhr) {
+            console.error('❌ Failed to fetch main traveler:', xhr);
         });
     }
 
