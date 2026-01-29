@@ -52,26 +52,41 @@
 
 <body>
     <!-- Instant session check - runs before other scripts -->
-
+    <script>
+        (function () {
+            const token = sessionStorage.getItem('jwt_token');
+            if (token) {
+                // If token exists, keep login hidden, show app wrapper (or loader)
+                document.write('<style>#login-container { display: none !important; } #app-container { display: none; }</style>');
+            } else {
+                // No token, show login immediately
+                document.write('<style>#login-container { display: flex; } #app-container { display: none; }</style>');
+            }
+        })();
+    </script>
 
     <!-- Login Container -->
     <div id="login-container">
-        <div class="login-wrapper"
-            style="text-align: center; padding: 40px; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.1);">
-            <i class="fas fa-lock" style="font-size: 48px; color: #2563eb; margin-bottom: 20px;"></i>
-            <h2 style="margin-bottom: 30px; color: #1f2937;">VisaD Vault Login</h2>
-            <form id="login-form" style="display: flex; flex-direction: column; gap: 15px; width: 300px;">
-                <input type="text" id="username" placeholder="Username" required
-                    style="padding: 12px; border: 1px solid #e5e7eb; border-radius: 6px; font-size: 16px;">
-                <div style="position: relative;">
-                    <input type="password" id="password" placeholder="Password" required
-                        style="padding: 12px; border: 1px solid #e5e7eb; border-radius: 6px; font-size: 16px; width: 100%; box-sizing: border-box;">
-                    <button type="button" id="password-toggle"
-                        style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; color: #6b7280;"></button>
+        <!-- Trail canvas for running stars -->
+        <canvas id="trail-canvas"></canvas>
+        <!-- Interactive canvas for mouse effect -->
+        <canvas id="star-canvas"></canvas>
+
+        <div class="login-wrapper">
+            <i class="fas fa-lock"></i>
+            <h2>VisaD Vault</h2>
+            <form id="login-form">
+                <div class="input-group">
+                    <input type="text" id="username" placeholder="Username" required>
+                    <i class="fas fa-user input-icon"></i>
                 </div>
-                <button type="submit"
-                    style="padding: 12px; background: #2563eb; color: white; border: none; border-radius: 6px; font-size: 16px; cursor: pointer; font-weight: 600; transition: background 0.2s;">Login</button>
-                <div id="login-error" style="color: #dc2626; font-size: 14px; display: none; margin-top: 10px;"></div>
+                <div class="input-group">
+                    <input type="password" id="password" placeholder="Password" required>
+                    <i class="fas fa-key input-icon"></i>
+                    <button type="button" id="password-toggle"><i class="fas fa-eye"></i></button>
+                </div>
+                <button type="submit">Login</button>
+                <div id="login-error" style="display: none;"></div>
             </form>
         </div>
     </div>

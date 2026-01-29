@@ -10,29 +10,29 @@ const VaultAuth = (function () {
 
     // Get stored JWT token
     function getToken() {
-        return localStorage.getItem(TOKEN_KEY);
+        return sessionStorage.getItem(TOKEN_KEY);
     }
 
     // Store JWT token
     function setToken(token) {
-        localStorage.setItem(TOKEN_KEY, token);
+        sessionStorage.setItem(TOKEN_KEY, token);
     }
 
     // Remove JWT token
     function clearToken() {
-        localStorage.removeItem(TOKEN_KEY);
-        localStorage.removeItem(USER_KEY);
+        sessionStorage.removeItem(TOKEN_KEY);
+        sessionStorage.removeItem(USER_KEY);
     }
 
     // Get user data
     function getUserData() {
-        const data = localStorage.getItem(USER_KEY);
+        const data = sessionStorage.getItem(USER_KEY);
         return data ? JSON.parse(data) : null;
     }
 
     // Store user data
     function setUserData(userData) {
-        localStorage.setItem(USER_KEY, JSON.stringify(userData));
+        sessionStorage.setItem(USER_KEY, JSON.stringify(userData));
     }
 
     // Check if user is authenticated
@@ -70,23 +70,20 @@ const VaultAuth = (function () {
     }
 
     // Logout function
-    async function logout() {
-        try {
-            const token = getToken();
-            if (token) {
-                await $.ajax({
-                    url: API_BASE_URL + '/auth/logout',
-                    method: 'POST',
-                    headers: { 'Authorization': 'Bearer ' + token },
-                    dataType: 'json'
-                });
-            }
-        } catch (error) {
-            console.error('Logout error:', error);
-        } finally {
-            clearToken();
-            window.location.href = 'login.html';
+    function logout() {
+        const token = getToken();
+        if (token) {
+            // Attempt to notify server but don't wait for it (prevent UI lag)
+            $.ajax({
+                url: API_BASE_URL + '/auth/logout',
+                method: 'POST',
+                headers: { 'Authorization': 'Bearer ' + token },
+                timeout: 1000 // Timeout just in case
+            }).fail(err => console.error('Background logout failed', err));
         }
+        clearToken();
+        // Redirect immediately to main page (which shows login form)
+        window.location.href = 'index.html';
     }
 
     // Check session validity

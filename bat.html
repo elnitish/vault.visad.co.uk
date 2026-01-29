@@ -1514,6 +1514,11 @@
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
     <script src="auth.js"></script>
     <script>
+        // Instant Auth Check
+        if (!localStorage.getItem('jwt_token')) {
+            window.location.href = 'index.html';
+        }
+
         $(async function () {
             const session = await VaultAuth.requireAuth();
             if (!session) return;
@@ -1522,6 +1527,15 @@
             fetchUsers();
             initializeData();
         });
+
+        // Global Variables
+        const now = new Date();
+        const currentYear = now.getFullYear();
+        const currentMonth = now.getMonth() + 1; // 1-indexed
+        const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+        let allRecords = [];
+        let currentDisplayedRecords = [];
+        let usersList = [];
 
         function fetchUsers() {
             // Fallback users if API endpoint not available or to augment
@@ -1535,6 +1549,11 @@
         $('#logout-btn').click(() => VaultAuth.logout());
         $('#refresh-btn').click(initializeData);
         $('#export-btn').click(exportCSV);
+
+        function isExcludedStatus(status) {
+            const s = (status || '').toLowerCase().trim();
+            return s === 'cancelled' || s === 'refunded';
+        }
 
         function initializeData() {
             $('#loading').show(); $('#empty').hide(); $('#groups-container').empty();
@@ -1581,7 +1600,8 @@
             allRecords.forEach(r => {
                 // Add main traveler's month if not hidden
                 if (!r._mainHidden) {
-                    const d = parseDate(r.doc_date);
+                    const dStr = r.plannedTravelDate || r.planned_travel_date_raw || r.doc_date;
+                    const d = parseDate(dStr);
                     if (d) {
                         const k = d.getFullYear() * 100 + (d.getMonth() + 1);
                         if (!monthsSet.has(k)) monthsSet.set(k, { month: d.getMonth() + 1, year: d.getFullYear() });
@@ -1591,7 +1611,8 @@
                 // Add months from valid dependents
                 const validDeps = (r.dependents || []).filter(dep => !isExcludedStatus(dep.status));
                 validDeps.forEach(dep => {
-                    const dd = parseDate(dep.doc_date);
+                    const dStr = dep.plannedTravelDate || dep.planned_travel_date_raw || dep.doc_date;
+                    const dd = parseDate(dStr);
                     if (dd) {
                         const k = dd.getFullYear() * 100 + (dd.getMonth() + 1);
                         if (!monthsSet.has(k)) monthsSet.set(k, { month: dd.getMonth() + 1, year: dd.getFullYear() });
@@ -1599,6 +1620,7 @@
                 });
             });
             const sorted = Array.from(monthsSet.entries()).sort((a, b) => b[0] - a[0]);
+
             const hasCurrent = monthsSet.has(currentYear * 100 + currentMonth);
             let html = '<button class="tab" data-filter="all">All</button>';
             sorted.forEach(([k, { month, year }]) => {
@@ -1610,6 +1632,7 @@
                 const m = parseInt($(this).data('month')) || 0, y = parseInt($(this).data('year')) || 0;
                 $(this).data('filter') === 'all' ? loadAllData() : loadDataForMonth(m, y);
             });
+
             if (isInitial) {
                 if (hasCurrent) loadDataForMonth(currentMonth, currentYear, true);
                 else if (sorted.length > 0) { const f = sorted[0][1]; $('#month-tabs .tab').removeClass('active'); $(`#month-tabs .tab[data-month="${f.month}"][data-year="${f.year}"]`).addClass('active'); loadDataForMonth(f.month, f.year, true); }
@@ -1620,14 +1643,16 @@
             let records = allRecords.filter(r => {
                 // Check main traveler's date (if not hidden)
                 if (!r._mainHidden) {
-                    const d = parseDate(r.doc_date);
+                    const dStr = r.plannedTravelDate || r.planned_travel_date_raw || r.doc_date;
+                    const d = parseDate(dStr);
                     if (d && d.getMonth() + 1 === month && d.getFullYear() === year) return true;
                 }
 
                 // Check dependents' dates (for hidden main or to include record if dependent matches)
                 const validDeps = (r.dependents || []).filter(dep => !isExcludedStatus(dep.status));
                 for (let dep of validDeps) {
-                    const dd = parseDate(dep.doc_date);
+                    const dStr = dep.plannedTravelDate || dep.planned_travel_date_raw || dep.doc_date;
+                    const dd = parseDate(dStr);
                     if (dd && dd.getMonth() + 1 === month && dd.getFullYear() === year) return true;
                 }
 
@@ -1638,17 +1663,23 @@
 
                 // For hidden main travelers, use the earliest valid dependent's date
                 if (a._mainHidden && a.dependents?.length) {
-                    const validDeps = a.dependents.filter(d => !isExcludedStatus(d.status) && d.doc_date);
-                    da = validDeps.length > 0 ? parseDate(validDeps[0].doc_date) : parseDate(a.doc_date);
+                    const validDeps = a.dependents.filter(d => !isExcludedStatus(d.status));
+                    const dep = validDeps.length > 0 ? validDeps[0] : null;
+                    const dStr = dep ? (dep.plannedTravelDate || dep.planned_travel_date_raw || dep.doc_date) : (a.plannedTravelDate || a.planned_travel_date_raw || a.doc_date);
+                    da = parseDate(dStr);
                 } else {
-                    da = parseDate(a.doc_date);
+                    const dStr = a.plannedTravelDate || a.planned_travel_date_raw || a.doc_date;
+                    da = parseDate(dStr);
                 }
 
                 if (b._mainHidden && b.dependents?.length) {
-                    const validDeps = b.dependents.filter(d => !isExcludedStatus(d.status) && d.doc_date);
-                    db = validDeps.length > 0 ? parseDate(validDeps[0].doc_date) : parseDate(b.doc_date);
+                    const validDeps = b.dependents.filter(d => !isExcludedStatus(d.status));
+                    const dep = validDeps.length > 0 ? validDeps[0] : null;
+                    const dStr = dep ? (dep.plannedTravelDate || dep.planned_travel_date_raw || dep.doc_date) : (b.plannedTravelDate || b.planned_travel_date_raw || b.doc_date);
+                    db = parseDate(dStr);
                 } else {
-                    db = parseDate(b.doc_date);
+                    const dStr = b.plannedTravelDate || b.planned_travel_date_raw || b.doc_date;
+                    db = parseDate(dStr);
                 }
 
                 // Handle null dates - put at end
@@ -1663,7 +1694,9 @@
 
         function loadAllData() {
             let r = [...allRecords].sort((a, b) => {
-                const da = parseDate(a.doc_date), db = parseDate(b.doc_date);
+                const daStr = a.plannedTravelDate || a.planned_travel_date_raw || a.doc_date;
+                const dbStr = b.plannedTravelDate || b.planned_travel_date_raw || b.doc_date;
+                const da = parseDate(daStr), db = parseDate(dbStr);
                 if (!da && !db) return 0;
                 if (!da) return 1;
                 if (!db) return -1;
@@ -1721,10 +1754,13 @@
         }
 
         function parseDate(s) {
-            if (!s || s.trim() === '') return null;
+            if (!s) return null;
+            const str = String(s).trim();
+            if (str === '') return null;
+
             // Handle DD/MM/YYYY format
-            if (s.includes('/')) {
-                const p = s.split('/');
+            if (str.includes('/')) {
+                const p = str.split('/');
                 if (p.length === 3) {
                     const day = parseInt(p[0], 10);
                     const month = parseInt(p[1], 10) - 1;
@@ -1735,8 +1771,8 @@
                 }
             }
             // Handle YYYY-MM-DD format
-            if (s.includes('-') && s.length === 10) {
-                const p = s.split('-');
+            if (str.includes('-') && str.length === 10) {
+                const p = str.split('-');
                 if (p.length === 3 && p[0].length === 4) {
                     const year = parseInt(p[0], 10);
                     const month = parseInt(p[1], 10) - 1;
@@ -1746,6 +1782,13 @@
                     }
                 }
             }
+
+            // Fallback to native parsing (e.g. ISO strings)
+            const fallback = new Date(str);
+            if (!isNaN(fallback.getTime()) && fallback.getFullYear() > 1900 && fallback.getFullYear() < 2100) {
+                return fallback;
+            }
+
             return null;
         }
 
@@ -1848,9 +1891,11 @@
                 const validDeps = (r.dependents || []).filter(d => !isExcludedStatus(d.status));
 
                 // Determine the display date - use first valid dependent's date if main is hidden
-                let docDate = r.doc_date || '';
-                if (r._mainHidden && validDeps.length > 0 && validDeps[0].doc_date) {
-                    docDate = validDeps[0].doc_date;
+                let docDate = r.plannedTravelDate || r.planned_travel_date_raw || r.doc_date || '';
+                if (r._mainHidden && validDeps.length > 0) {
+                    const d = validDeps[0];
+                    const dd = d.plannedTravelDate || d.planned_travel_date_raw || d.doc_date;
+                    if (dd) docDate = dd;
                 }
 
                 // Skip records with empty dates
@@ -1911,7 +1956,7 @@
                     rowNum++;
                     const depName = `${dep.first_name || ''} ${dep.last_name || ''}`.trim().toUpperCase();
                     const depAgent = dep.assigned_to || dep.created_by || r.assigned_to || r.created_by || '';
-                    const depDate = dep.doc_date || docDate;
+                    const depDate = dep.plannedTravelDate || dep.planned_travel_date_raw || dep.doc_date || docDate;
                     const depRoute = `${dep.visa_center || r.visa_center || 'London'} - ${dep.travel_country || r.travel_country || ''} - ${dep.visa_type || r.visa_type || 'Tourist'}`;
                     const depStatus = dep.status || r.status || 'Completed';
                     const depStatusClass = getStatusClass(depStatus);
@@ -2039,7 +2084,10 @@
                     let prog = r.progress_percentage || 0;
                     const st = (r.status || '').toLowerCase();
                     if (prog === 0) { if (st === 'completed' || st === 'visa approved') prog = 100; else if (st === 'doc') prog = 60; }
-                    rows.push([num, r.doc_date || '', `${r.first_name || ''} ${r.last_name || ''}`.trim(), r.assigned_to || r.created_by || '', m ? m[1].trim() : '', `${r.visa_center || 'London'} - ${r.travel_country || ''} - ${r.visa_type || 'Tourist'}`, r.status || '', r.package || '', prog + '%', r.whatsapp_contact || r.contact_number || '', r.payment_status || '', (r.notes || '').replace(/"/g, '""')]);
+
+                    const dStr = r.plannedTravelDate || r.planned_travel_date_raw || r.doc_date || '';
+
+                    rows.push([num, dStr, `${r.first_name || ''} ${r.last_name || ''}`.trim(), r.assigned_to || r.created_by || '', m ? m[1].trim() : '', `${r.visa_center || 'London'} - ${r.travel_country || ''} - ${r.visa_type || 'Tourist'}`, r.status || '', r.package || '', prog + '%', r.whatsapp_contact || r.contact_number || '', r.payment_status || '', (r.notes || '').replace(/"/g, '""')]);
                 }
                 (r.dependents || []).filter(d => !isExcludedStatus(d.status)).forEach(dep => {
                     num++;
@@ -2047,7 +2095,11 @@
                     let dprog = dep.progress_percentage || 0;
                     const dst = (dep.status || '').toLowerCase();
                     if (dprog === 0) { if (dst === 'completed' || dst === 'visa approved') dprog = 100; else if (dst === 'doc') dprog = 60; }
-                    rows.push([num, dep.doc_date || r.doc_date || '', '  → ' + `${dep.first_name || ''} ${dep.last_name || ''}`.trim(), dep.assigned_to || dep.created_by || '', dm ? dm[1].trim() : '', `${dep.visa_center || r.visa_center || 'London'} - ${dep.travel_country || r.travel_country || ''} - ${dep.visa_type || r.visa_type || 'Tourist'}`, dep.status || r.status || '', dep.package || r.package || '', dprog + '%', dep.whatsapp_contact || dep.contact_number || '', dep.payment_status || r.payment_status || '', (dep.notes || '').replace(/"/g, '""')]);
+
+                    const rDate = r.plannedTravelDate || r.planned_travel_date_raw || r.doc_date || '';
+                    const dDate = dep.plannedTravelDate || dep.planned_travel_date_raw || dep.doc_date || rDate;
+
+                    rows.push([num, dDate, '  → ' + `${dep.first_name || ''} ${dep.last_name || ''}`.trim(), dep.assigned_to || dep.created_by || '', dm ? dm[1].trim() : '', `${dep.visa_center || r.visa_center || 'London'} - ${dep.travel_country || r.travel_country || ''} - ${dep.visa_type || r.visa_type || 'Tourist'}`, dep.status || r.status || '', dep.package || r.package || '', dprog + '%', dep.whatsapp_contact || dep.contact_number || '', dep.payment_status || r.payment_status || '', (dep.notes || '').replace(/"/g, '""')]);
                 });
             });
             const csv = '\uFEFF' + [headers, ...rows].map(r => r.map(c => `"${c}"`).join(',')).join('\n');
@@ -2152,7 +2204,6 @@
             });
             updateStats(total, full, appt, completed, assigned);
         }
-});
     </script>
 </body>
 
