@@ -21,14 +21,6 @@
             background: #fafbfc;
         }
 
-        #login-container {
-            display: none;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            background: #ffffff;
-        }
-
         #app-container {
             display: none;
         }
@@ -56,40 +48,16 @@
         (function () {
             const token = sessionStorage.getItem('jwt_token');
             if (token) {
-                // If token exists, keep login hidden, show app wrapper (or loader)
-                document.write('<style>#login-container { display: none !important; } #app-container { display: none; }</style>');
+                // If token exists, show app wrapper (or loader)
+                document.write('<style>#app-container { display: none; }</style>');
             } else {
-                // No token, show login immediately
-                document.write('<style>#login-container { display: flex; } #app-container { display: none; }</style>');
+                // No token, redirect to login page
+                window.location.href = 'login.html';
             }
         })();
     </script>
 
-    <!-- Login Container -->
-    <div id="login-container">
-        <!-- Trail canvas for running stars -->
-        <canvas id="trail-canvas"></canvas>
-        <!-- Interactive canvas for mouse effect -->
-        <canvas id="star-canvas"></canvas>
-
-        <div class="login-wrapper">
-            <i class="fas fa-lock"></i>
-            <h2>VisaD Vault</h2>
-            <form id="login-form">
-                <div class="input-group">
-                    <input type="text" id="username" placeholder="Username" required>
-                    <i class="fas fa-user input-icon"></i>
-                </div>
-                <div class="input-group">
-                    <input type="password" id="password" placeholder="Password" required>
-                    <i class="fas fa-key input-icon"></i>
-                    <button type="button" id="password-toggle"><i class="fas fa-eye"></i></button>
-                </div>
-                <button type="submit">Login</button>
-                <div id="login-error" style="display: none;"></div>
-            </form>
-        </div>
-    </div>
+    <!-- Login Container Removed -->
 
     <!-- Main App Container -->
     <div id="app-container" style="display: none;">

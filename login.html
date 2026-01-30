@@ -4,83 +4,1054 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>VisaD Vault - Login</title>
-    <link rel="stylesheet" href="style.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap"
+    <title>VISAD VAULT - Login</title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Outfit:wght@300;400;500;600&display=swap"
         rel="stylesheet">
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="auth.js"></script>
+    <style>
+        :root {
+            --primary-blue: #0EA5E9;
+            --light-blue: #BAE6FD;
+            --sky-blue: #7DD3FC;
+            --pure-white: #FFFFFF;
+            --soft-white: #F0F9FF;
+            --dark-text: #0C4A6E;
+            --accent-blue: #0284C7;
+            --shadow-blue: rgba(14, 165, 233, 0.2);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Outfit', sans-serif;
+            background: linear-gradient(135deg, #F0F9FF 0%, #E0F2FE 50%, #BAE6FD 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow-y: auto;
+            overflow-x: hidden;
+            position: relative;
+            padding: 20px 0;
+        }
+
+        /* Animated Cloud Background */
+        .clouds {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            z-index: 0;
+        }
+
+        .cloud {
+            position: absolute;
+            background: rgba(255, 255, 255, 0.6);
+            border-radius: 100px;
+            opacity: 0.7;
+            animation: float 60s infinite linear;
+        }
+
+        .cloud:nth-child(1) {
+            width: 200px;
+            height: 60px;
+            top: 10%;
+            left: -200px;
+            animation-duration: 50s;
+        }
+
+        .cloud:nth-child(2) {
+            width: 300px;
+            height: 80px;
+            top: 30%;
+            left: -300px;
+            animation-duration: 70s;
+            animation-delay: 10s;
+        }
+
+        .cloud:nth-child(3) {
+            width: 250px;
+            height: 70px;
+            top: 60%;
+            left: -250px;
+            animation-duration: 60s;
+            animation-delay: 20s;
+        }
+
+        .cloud:nth-child(4) {
+            width: 180px;
+            height: 50px;
+            top: 80%;
+            left: -180px;
+            animation-duration: 55s;
+            animation-delay: 15s;
+        }
+
+        @keyframes float {
+            0% {
+                transform: translateX(0);
+            }
+
+            100% {
+                transform: translateX(calc(100vw + 300px));
+            }
+        }
+
+        /* Airplane Animation */
+        .airplane-container {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            z-index: 1;
+            pointer-events: none;
+        }
+
+        .airplane {
+            position: absolute;
+            width: 120px;
+            height: 120px;
+            animation: fly 25s infinite linear;
+            filter: drop-shadow(0 10px 20px rgba(14, 165, 233, 0.3));
+        }
+
+        .airplane svg {
+            width: 100%;
+            height: 100%;
+            fill: var(--primary-blue);
+        }
+
+        .airplane-trail {
+            position: absolute;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, rgba(14, 165, 233, 0.4), transparent);
+            width: 200px;
+            top: 50%;
+            left: -200px;
+            animation: trail 25s infinite linear;
+        }
+
+        @keyframes fly {
+            0% {
+                top: -10%;
+                left: -10%;
+                transform: rotate(-45deg);
+            }
+
+            100% {
+                top: 110%;
+                left: 110%;
+                transform: rotate(-45deg);
+            }
+        }
+
+        @keyframes trail {
+            0% {
+                opacity: 0;
+            }
+
+            10% {
+                opacity: 1;
+            }
+
+            90% {
+                opacity: 1;
+            }
+
+            100% {
+                opacity: 0;
+            }
+        }
+
+        /* Login Container - Split Layout */
+        .login-container {
+            position: relative;
+            z-index: 10;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border-radius: 32px;
+            width: 750px;
+            max-width: 90vw;
+            min-height: 450px;
+            box-shadow: 0 20px 60px rgba(14, 165, 233, 0.15), 0 0 0 1px rgba(14, 165, 233, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.8);
+            animation: slideIn 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
+            display: flex;
+            flex-direction: row;
+            overflow: hidden;
+        }
+
+        /* LEFT PANE = BRANDING */
+        /* Updated: Was login-right, now acting as login-left */
+        .login-left {
+            flex: 0.8;
+            background: linear-gradient(135deg, var(--soft-white), #E0F2FE);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            z-index: 1;
+            border-right: 1px solid rgba(14, 165, 233, 0.1);
+        }
+
+        /* RIGHT PANE = FORM */
+        /* Updated: Was login-left, now acting as login-right */
+        .login-right {
+            flex: 1;
+            padding: 40px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            background: white;
+            z-index: 2;
+        }
+
+        @keyframes slideIn {
+            0% {
+                opacity: 0;
+                transform: translateY(30px) scale(0.95);
+            }
+
+            100% {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        /* Branding Section (Now Left Side) */
+        .company-logo {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .logo-icon {
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, var(--primary-blue), var(--accent-blue));
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Orbitron', monospace;
+            font-weight: 900;
+            font-size: 24px;
+            color: white;
+            box-shadow: 0 8px 20px var(--shadow-blue);
+            animation: pulse 3s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                transform: scale(1);
+                box-shadow: 0 8px 20px var(--shadow-blue);
+            }
+
+            50% {
+                transform: scale(1.05);
+                box-shadow: 0 12px 30px rgba(14, 165, 233, 0.4);
+            }
+        }
+
+        .company-name {
+            font-family: 'Orbitron', monospace;
+            font-size: 40px;
+            font-weight: 900;
+            background: linear-gradient(135deg, var(--primary-blue), var(--accent-blue));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+        }
+
+        .app-name {
+            font-family: 'Orbitron', monospace;
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--dark-text);
+            letter-spacing: 8px;
+            text-transform: uppercase;
+            margin-top: 10px;
+            opacity: 0.8;
+        }
+
+        .login-subtitle {
+            font-size: 16px;
+            color: var(--dark-text);
+            opacity: 0.7;
+            margin-top: 20px;
+            font-weight: 400;
+            text-align: center;
+            max-width: 80%;
+        }
+
+        /* Form Styles (Now Right Side) */
+        .login-form {
+            display: flex;
+            flex-direction: column;
+            gap: 25px;
+            width: 100%;
+        }
+
+        .form-title {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--dark-text);
+            margin-bottom: 30px;
+            text-align: center;
+        }
+
+        .form-group {
+            position: relative;
+            animation: fadeInUp 0.6s ease-out backwards;
+        }
+
+        .form-group:nth-child(1) {
+            animation-delay: 0.2s;
+        }
+
+        .form-group:nth-child(2) {
+            animation-delay: 0.3s;
+        }
+
+        @keyframes fadeInUp {
+            0% {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+
+            100% {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 10px;
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--dark-text);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .input-wrapper {
+            position: relative;
+        }
+
+        .input-icon {
+            position: absolute;
+            left: 18px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--primary-blue);
+            font-size: 20px;
+            z-index: 2;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 18px 18px 18px 55px;
+            border: 2px solid rgba(14, 165, 233, 0.2);
+            border-radius: 16px;
+            font-size: 16px;
+            font-family: 'Outfit', sans-serif;
+            font-weight: 400;
+            background: white;
+            color: var(--dark-text);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            outline: none;
+        }
+
+        .form-group input:focus {
+            border-color: var(--primary-blue);
+            box-shadow: 0 0 0 4px rgba(14, 165, 233, 0.1);
+            transform: translateY(-2px);
+        }
+
+        .form-group input::placeholder {
+            color: rgba(12, 74, 110, 0.4);
+        }
+
+        .login-button {
+            margin-top: 15px;
+            padding: 18px;
+            background: linear-gradient(135deg, var(--primary-blue), var(--accent-blue));
+            color: white;
+            border: none;
+            border-radius: 16px;
+            font-size: 16px;
+            font-weight: 600;
+            font-family: 'Outfit', sans-serif;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 10px 25px rgba(14, 165, 233, 0.3);
+            animation: fadeInUp 0.6s ease-out 0.4s backwards;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .login-button:before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+            transition: left 0.5s;
+        }
+
+        .login-button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 15px 35px rgba(14, 165, 233, 0.4);
+        }
+
+        .login-button:hover:before {
+            left: 100%;
+        }
+
+        .login-button:active {
+            transform: translateY(-1px);
+        }
+
+        /* Biometric & Footer */
+        .biometric-section {
+            margin-top: 25px;
+            text-align: center;
+            animation: fadeInUp 0.6s ease-out 0.5s backwards;
+        }
+
+        .divider {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .divider-line {
+            flex: 1;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(14, 165, 233, 0.3), transparent);
+        }
+
+        .divider-text {
+            font-size: 13px;
+            color: var(--dark-text);
+            opacity: 0.6;
+            font-weight: 500;
+        }
+
+        .fingerprint-button {
+            width: 70px;
+            height: 70px;
+            margin: 0 auto;
+            background: linear-gradient(135deg, rgba(14, 165, 233, 0.1), rgba(2, 132, 199, 0.1));
+            border: 2px solid rgba(14, 165, 233, 0.3);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .fingerprint-button:hover {
+            transform: scale(1.1);
+            border-color: var(--primary-blue);
+            background: linear-gradient(135deg, rgba(14, 165, 233, 0.2), rgba(2, 132, 199, 0.2));
+            box-shadow: 0 10px 25px rgba(14, 165, 233, 0.3);
+        }
+
+        .fingerprint-button:active {
+            transform: scale(1.05);
+        }
+
+        .fingerprint-button.scanning {
+            animation: scan-pulse 1.5s ease-in-out infinite;
+        }
+
+        @keyframes scan-pulse {
+
+            0%,
+            100% {
+                box-shadow: 0 0 0 0 rgba(14, 165, 233, 0.7);
+            }
+
+            50% {
+                box-shadow: 0 0 0 15px rgba(14, 165, 233, 0);
+            }
+        }
+
+        .fingerprint-icon {
+            font-size: 32px;
+            transition: transform 0.3s;
+        }
+
+        .fingerprint-button:hover .fingerprint-icon {
+            transform: scale(1.1);
+        }
+
+        .biometric-label {
+            margin-top: 12px;
+            font-size: 13px;
+            color: var(--dark-text);
+            opacity: 0.7;
+            font-weight: 500;
+        }
+
+        .biometric-status {
+            margin-top: 10px;
+            font-size: 12px;
+            padding: 8px 16px;
+            border-radius: 20px;
+            display: inline-block;
+            font-weight: 500;
+        }
+
+        .biometric-status.success {
+            background: rgba(34, 197, 94, 0.1);
+            color: #15803d;
+        }
+
+        .biometric-status.error {
+            background: rgba(239, 68, 68, 0.1);
+            color: #991b1b;
+        }
+
+        .biometric-status.info {
+            background: rgba(14, 165, 233, 0.1);
+            color: var(--dark-text);
+        }
+
+        .login-footer {
+            margin-top: 35px;
+            text-align: center;
+            font-size: 13px;
+            color: var(--dark-text);
+            opacity: 0.6;
+            animation: fadeInUp 0.6s ease-out 0.5s backwards;
+        }
+
+        .powered-by {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            margin-top: 12px;
+        }
+
+        .powered-by span {
+            font-weight: 600;
+            color: var(--primary-blue);
+        }
+
+        .deco-circle {
+            position: absolute;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(14, 165, 233, 0.15), transparent);
+            pointer-events: none;
+        }
+
+        .deco-circle-1 {
+            width: 300px;
+            height: 300px;
+            top: -150px;
+            right: -150px;
+            animation: float-circle 8s ease-in-out infinite;
+        }
+
+        .deco-circle-2 {
+            width: 200px;
+            height: 200px;
+            bottom: -100px;
+            left: -100px;
+            animation: float-circle 6s ease-in-out infinite reverse;
+        }
+
+        @keyframes float-circle {
+
+            0%,
+            100% {
+                transform: translate(0, 0);
+            }
+
+            50% {
+                transform: translate(20px, 20px);
+            }
+        }
+
+        /* Responsive Design */
+        @media (max-width: 850px) {
+            .login-container {
+                flex-direction: column;
+                width: 90%;
+                min-height: auto;
+                padding: 0;
+            }
+
+            .login-left {
+                flex: none;
+                padding: 40px 20px;
+                border-right: none;
+                border-bottom: 1px solid rgba(14, 165, 233, 0.1);
+            }
+
+            .login-right {
+                padding: 30px 20px;
+            }
+
+            .company-name {
+                font-size: 36px;
+            }
+
+            .app-name {
+                font-size: 18px;
+                letter-spacing: 6px;
+            }
+        }
+    </style>
 </head>
 
 <body>
-    <!-- Login Container -->
-    <div id="login-container">
-        <!-- Trail canvas for running stars -->
-        <canvas id="trail-canvas"></canvas>
-        <!-- Interactive canvas for mouse effect -->
-        <canvas id="star-canvas"></canvas>
+    <!-- Cloud Background -->
+    <div class="clouds">
+        <div class="cloud"></div>
+        <div class="cloud"></div>
+        <div class="cloud"></div>
+        <div class="cloud"></div>
+    </div>
 
-        <div class="login-wrapper">
-            <i class="fas fa-lock"></i>
-            <h2>VisaD Vault</h2>
-            <form id="login-form">
-                <div class="input-group">
-                    <input type="text" id="username" placeholder="Username" required>
-                    <i class="fas fa-user input-icon"></i>
+    <!-- Airplane Animation -->
+    <div class="airplane-container">
+        <div class="airplane-trail"></div>
+        <div class="airplane">
+            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path
+                    d="M21 16v-2l-8-5V3.5c0-.83-.67-1.5-1.5-1.5S10 2.67 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z" />
+            </svg>
+        </div>
+    </div>
+
+    <!-- Login Container -->
+    <div class="login-container">
+        <div class="deco-circle deco-circle-1"></div>
+        <div class="deco-circle deco-circle-2"></div>
+
+        <!-- Left Pane: Branding -->
+        <div class="login-left">
+            <div class="login-header">
+                <div class="company-logo">
+                    <div class="logo-icon">V</div>
+                    <h1 class="company-name">VISAD</h1>
                 </div>
-                <div class="input-group">
-                    <input type="password" id="password" placeholder="Password" required>
-                    <i class="fas fa-key input-icon"></i>
-                    <button type="button" id="password-toggle"><i class="fas fa-eye"></i></button>
+                <div class="app-name">VAULT</div>
+                <p class="login-subtitle">Enterprise Visa Consulting Platform</p>
+            </div>
+        </div>
+
+        <!-- Right Pane: Login Form -->
+        <div class="login-right">
+            <h2 class="form-title">Welcome Back</h2>
+            <form class="login-form" id="loginForm">
+                <div class="form-group">
+                    <label for="username">Username</label>
+                    <div class="input-wrapper">
+                        <span class="input-icon">👤</span>
+                        <input type="text" id="username" name="username" placeholder="Enter your username" required
+                            autocomplete="username">
+                    </div>
                 </div>
-                <button type="submit">Login</button>
-                <div id="login-error" style="display: none;"></div>
+
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <div class="input-wrapper">
+                        <span class="input-icon">🔒</span>
+                        <input type="password" id="password" name="password" placeholder="Enter your password" required
+                            autocomplete="current-password">
+                    </div>
+                </div>
+
+                <button type="submit" class="login-button">Access Vault</button>
             </form>
+            <div id="login-error"
+                style="color: #ef4444; text-align: center; margin-top: 15px; font-size: 14px; display: none; background: rgba(255,0,0,0.1); padding: 10px; border-radius: 8px;">
+            </div>
+
+            <!-- Biometric Authentication Section -->
+            <div class="biometric-section">
+                <div class="divider">
+                    <div class="divider-line"></div>
+                    <span class="divider-text">OR</span>
+                    <div class="divider-line"></div>
+                </div>
+
+                <div class="fingerprint-button" id="fingerprintButton" title="Login with Biometrics">
+                    <span class="fingerprint-icon">🔐</span>
+                </div>
+                <div class="biometric-label">Biometric Login</div>
+                <div id="biometricStatus" class="biometric-status" style="display: none;"></div>
+            </div>
+
+            <div class="login-footer">
+                <div>Sales • Appointments • Documentation</div>
+                <div class="powered-by">
+                    Powered by <span>iwebron</span>
+                </div>
+            </div>
         </div>
     </div>
 
     <script>
-        $(document).ready(function () {
-            // Check if already authenticated
-            if (VaultAuth.isAuthenticated()) {
-                window.location.href = 'index.html';
+        // Biometric Authentication using Web Authentication API (WebAuthn)
+        const BiometricAuth = {
+            // Check if biometric authentication is available
+            isAvailable: function () {
+                return window.PublicKeyCredential !== undefined &&
+                    navigator.credentials !== undefined;
+            },
+
+            // Show status message
+            showStatus: function (message, type = 'info') {
+                const statusEl = document.getElementById('biometricStatus');
+                statusEl.textContent = message;
+                statusEl.className = `biometric-status ${type}`; // Fixed string interpolation
+                statusEl.style.display = 'inline-block';
+
+                setTimeout(() => {
+                    statusEl.style.display = 'none';
+                }, 4000);
+            },
+
+            // --- Helpers for Base64URL encoding/decoding ---
+            _bufferToBase64url: function (buffer) {
+                const bytes = new Uint8Array(buffer);
+                let binary = '';
+                for (let len = bytes.byteLength, i = 0; i < len; i++) {
+                    binary += String.fromCharCode(bytes[i]);
+                }
+                return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
+            },
+
+            _base64urlToBuffer: function (base64url) {
+                const padding = '='.repeat((4 - base64url.length % 4) % 4);
+                const base64 = (base64url + padding).replace(/-/g, '+').replace(/_/g, '/');
+                const binary = atob(base64);
+                const bytes = new Uint8Array(binary.length);
+                for (let i = 0; i < binary.length; i++) {
+                    bytes[i] = binary.charCodeAt(i);
+                }
+                return bytes.buffer;
+            },
+
+            // Register biometric credentials (first-time setup)
+            register: async function (username) {
+                try {
+                    this.showStatus('Starting registration...', 'info');
+
+                    // 1. Get Challenge from Server
+                    const startResponse = await $.ajax({
+                        url: VaultAuth.API_BASE_URL + '/auth/webauthn/register/start',
+                        method: 'POST',
+                        contentType: 'application/json',
+                        data: JSON.stringify({ username: username })
+                    });
+
+                    // 2. Create Credential
+                    const credential = await navigator.credentials.create({
+                        publicKey: {
+                            challenge: this._base64urlToBuffer(startResponse.challenge),
+                            rp: { name: startResponse.rpName, id: startResponse.rpId },
+                            user: {
+                                id: this._base64urlToBuffer(startResponse.userId),
+                                name: username,
+                                displayName: username
+                            },
+                            pubKeyCredParams: [
+                                { alg: -7, type: "public-key" }, // ES256
+                                { alg: -257, type: "public-key" } // RS256
+                            ],
+                            authenticatorSelection: {
+                                authenticatorAttachment: "platform",
+                                userVerification: "required"
+                            },
+                            timeout: 60000,
+                            attestation: "direct"
+                        }
+                    });
+
+                    // 3. Send to Server
+                    const attestationObject = this._bufferToBase64url(credential.response.attestationObject);
+                    const clientDataJSON = this._bufferToBase64url(credential.response.clientDataJSON);
+                    const rawId = this._bufferToBase64url(credential.rawId);
+
+                    await $.ajax({
+                        url: VaultAuth.API_BASE_URL + '/auth/webauthn/register/finish',
+                        method: 'POST',
+                        contentType: 'application/json',
+                        data: JSON.stringify({
+                            id: credential.id,
+                            rawId: rawId,
+                            type: credential.type,
+                            response: {
+                                attestationObject: attestationObject,
+                                clientDataJSON: clientDataJSON
+                            }
+                        })
+                    });
+
+                    localStorage.setItem('biometric_enabled_user', username);
+                    this.showStatus('Biometric registered successfully!', 'success');
+                    return true;
+
+                } catch (error) {
+                    console.error('Biometric registration error:', error);
+                    let msg = error.message;
+                    if (error.name === 'NotAllowedError') msg = 'Registration cancelled.';
+                    this.showStatus('Registration failed: ' + msg, 'error');
+                    return false;
+                }
+            },
+
+            // Authenticate using biometric
+            authenticate: async function () {
+                try {
+                    let username = localStorage.getItem('biometric_enabled_user');
+                    if (!username) {
+                        username = document.getElementById('username').value;
+                    }
+                    if (!username) {
+                        this.showStatus('Please enter username first', 'info');
+                        return false;
+                    }
+
+                    const button = document.getElementById('fingerprintButton');
+                    button.classList.add('scanning');
+
+                    // 1. Get Login Options
+                    const startResponse = await $.ajax({
+                        url: VaultAuth.API_BASE_URL + '/auth/webauthn/login/start',
+                        method: 'POST',
+                        contentType: 'application/json',
+                        data: JSON.stringify({ username: username })
+                    });
+
+                    const publicKeyOptions = {
+                        challenge: this._base64urlToBuffer(startResponse.challenge),
+                        rpId: startResponse.rpId,
+                        userVerification: "required",
+                        timeout: 60000
+                    };
+
+                    // 2. Get Assertion
+                    const assertion = await navigator.credentials.get({
+                        publicKey: publicKeyOptions
+                    });
+
+                    button.classList.remove('scanning');
+
+                    // 3. Verify on Server
+                    const authenticatorData = this._bufferToBase64url(assertion.response.authenticatorData);
+                    const clientDataJSON = this._bufferToBase64url(assertion.response.clientDataJSON);
+                    const signature = this._bufferToBase64url(assertion.response.signature);
+                    const userHandle = assertion.response.userHandle ? this._bufferToBase64url(assertion.response.userHandle) : null;
+                    const rawId = this._bufferToBase64url(assertion.rawId);
+
+                    const finishResponse = await $.ajax({
+                        url: VaultAuth.API_BASE_URL + '/auth/webauthn/login/finish',
+                        method: 'POST',
+                        contentType: 'application/json',
+                        data: JSON.stringify({
+                            id: assertion.id,
+                            rawId: rawId,
+                            type: assertion.type,
+                            response: {
+                                authenticatorData: authenticatorData,
+                                clientDataJSON: clientDataJSON,
+                                signature: signature,
+                                userHandle: userHandle
+                            }
+                        })
+                    });
+
+                    if (finishResponse.status === 'success' && finishResponse.token) {
+                        this.showStatus('Authentication successful!', 'success');
+                        VaultAuth.setToken(finishResponse.token);
+                        // Ideally set user data here too
+                        setTimeout(() => {
+                            window.location.href = 'index.html';
+                        }, 500);
+                        return true;
+                    } else {
+                        throw new Error('Server verification failed');
+                    }
+
+                } catch (error) {
+                    console.error('Biometric authentication error:', error);
+                    const button = document.getElementById('fingerprintButton');
+                    button.classList.remove('scanning');
+
+                    if (error.name === 'NotAllowedError') {
+                        this.showStatus('Authentication cancelled', 'error');
+                    } else {
+                        this.showStatus('Authentication failed: ' + error.message, 'error');
+                    }
+                    return false;
+                }
+            }
+        };
+
+        // Check biometric availability on page load
+        window.addEventListener('DOMContentLoaded', function () {
+            const fingerprintButton = document.getElementById('fingerprintButton');
+
+            if (!BiometricAuth.isAvailable()) {
+                fingerprintButton.style.opacity = '0.5';
+                fingerprintButton.style.cursor = 'not-allowed';
+                fingerprintButton.title = 'Biometric authentication not available on this device/browser';
+
+                fingerprintButton.addEventListener('click', function () {
+                    BiometricAuth.showStatus('Biometric not supported on this device', 'error');
+                });
+            } else {
+                // Check if user has registered biometric
+                const hasRegistered = localStorage.getItem('biometric_credential_id');
+                if (hasRegistered) {
+                    fingerprintButton.querySelector('.fingerprint-icon').textContent = '✓';
+                    fingerprintButton.title = 'Login with registered biometric';
+                }
+            }
+        });
+
+        // Fingerprint button click handler
+        document.getElementById('fingerprintButton').addEventListener('click', async function () {
+            if (!BiometricAuth.isAvailable()) {
                 return;
             }
 
-            // Password toggle
-            $('#password-toggle').click(function () {
-                const passwordInput = $('#password');
-                const icon = $(this).find('i');
-                if (passwordInput.attr('type') === 'password') {
-                    passwordInput.attr('type', 'text');
-                    icon.removeClass('fa-eye').addClass('fa-eye-slash');
+            const hasRegistered = localStorage.getItem('biometric_credential_id');
+
+            if (hasRegistered) {
+                // Authenticate
+                await BiometricAuth.authenticate();
+            } else {
+                // Ask user to register first
+                BiometricAuth.showStatus('Please login with password first to register biometric', 'info');
+            }
+        });
+
+        // Form submission handler
+        document.getElementById('loginForm').addEventListener('submit', async function (e) {
+            e.preventDefault();
+
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            const $error = $('#login-error'); // Using jQuery for consistency with auth.js error handling
+
+            // Reset error
+            $error.hide().text('');
+
+            // Loading state
+            const button = this.querySelector('.login-button');
+            const originalText = button.textContent;
+            button.textContent = 'Accessing...';
+            button.style.opacity = '0.7';
+            button.disabled = true;
+
+            try {
+                // Use real VaultAuth login
+                if (window.VaultAuth) {
+                    const result = await VaultAuth.login(username, password);
+
+                    if (result.success) {
+                        // Login successful
+
+                        // Check if biometric is available but NOT registered
+                        if (BiometricAuth.isAvailable()) {
+                            const hasRegistered = localStorage.getItem('biometric_credential_id');
+
+                            if (!hasRegistered) {
+                                // Ask user to register
+                                // Small timeout to let UI update
+                                await new Promise(r => setTimeout(r, 100));
+                                const registerBiometric = confirm('Login successful!\n\nWould you like to enable biometric login for faster access next time?');
+
+                                if (registerBiometric) {
+                                    await BiometricAuth.register(username);
+                                    const fingerprintButton = document.getElementById('fingerprintButton');
+                                    if (fingerprintButton) {
+                                        const icon = fingerprintButton.querySelector('.fingerprint-icon');
+                                        if (icon) icon.textContent = '✓';
+                                        fingerprintButton.title = 'Login with registered biometric';
+                                    }
+                                }
+                            }
+                        }
+
+                        // Redirect
+                        window.location.href = 'index.html';
+                    } else {
+                        // Login failed
+                        $error.text(result.message || 'Login failed').fadeIn();
+                        button.textContent = originalText;
+                        button.style.opacity = '1';
+                        button.disabled = false;
+                    }
                 } else {
-                    passwordInput.attr('type', 'password');
-                    icon.removeClass('fa-eye-slash').addClass('fa-eye');
+                    console.error('VaultAuth not found');
+                    $error.text('System error: Authentication module not loaded.').fadeIn();
+                    button.textContent = originalText;
+                    button.style.opacity = '1';
+                    button.disabled = false;
                 }
+            } catch (err) {
+                console.error(err);
+                $error.text('An error occurred. Please try again.').fadeIn();
+                button.textContent = originalText;
+                button.style.opacity = '1';
+                button.disabled = false;
+            }
+        });
+
+        // Add input focus animations
+        const inputs = document.querySelectorAll('input');
+        inputs.forEach(input => {
+            input.addEventListener('focus', function () {
+                this.parentElement.style.transform = 'scale(1.01)';
             });
 
-            // Login form submission
-            $('#login-form').submit(async function (e) {
-                e.preventDefault();
-                const username = $('#username').val();
-                const password = $('#password').val();
-                const $btn = $(this).find('button[type="submit"]');
-                const $error = $('#login-error');
-
-                $btn.prop('disabled', true).text('Logging in...');
-                $error.hide();
-
-                const result = await VaultAuth.login(username, password);
-
-                if (result.success) {
-                    window.location.href = 'index.html';
-                } else {
-                    $error.text(result.message).fadeIn();
-                    $btn.prop('disabled', false).text('Login');
-                }
+            input.addEventListener('blur', function () {
+                this.parentElement.style.transform = 'scale(1)';
             });
+        });
+
+        // Particle effect on button hover (optional enhancement)
+        const loginButton = document.querySelector('.login-button');
+        loginButton.addEventListener('mouseenter', function () {
+            this.style.transform = 'translateY(-3px)';
+        });
+
+        loginButton.addEventListener('mouseleave', function () {
+            this.style.transform = 'translateY(0)';
         });
     </script>
 </body>
