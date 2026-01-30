@@ -5,225 +5,88 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>VISAD VAULT - Login</title>
-    <link
-        href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Outfit:wght@300;400;500;600&display=swap"
-        rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="style.css">
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="auth.js"></script>
     <style>
-        :root {
-            --primary-blue: #0EA5E9;
-            --light-blue: #BAE6FD;
-            --sky-blue: #7DD3FC;
-            --pure-white: #FFFFFF;
-            --soft-white: #F0F9FF;
-            --dark-text: #0C4A6E;
-            --accent-blue: #0284C7;
-            --shadow-blue: rgba(14, 165, 233, 0.2);
-        }
-
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+        /* =========================================
+           LOGIN PAGE STYLES
+           Inherits from style.css (:root variables)
+           ========================================= */
 
         body {
-            font-family: 'Outfit', sans-serif;
-            background: linear-gradient(135deg, #F0F9FF 0%, #E0F2FE 50%, #BAE6FD 100%);
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
             min-height: 100vh;
             display: flex;
             justify-content: center;
             align-items: center;
-            overflow-y: auto;
-            overflow-x: hidden;
             position: relative;
-            padding: 20px 0;
+            padding: 20px;
+            overflow-x: hidden;
+            /* Subtle animated background */
+            background-image:
+                radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.05) 0px, transparent 50%),
+                radial-gradient(at 100% 100%, rgba(16, 185, 129, 0.05) 0px, transparent 50%);
         }
 
-        /* Animated Cloud Background */
-        .clouds {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            overflow: hidden;
-            z-index: 0;
-        }
-
-        .cloud {
-            position: absolute;
-            background: rgba(255, 255, 255, 0.6);
-            border-radius: 100px;
-            opacity: 0.7;
-            animation: float 60s infinite linear;
-        }
-
-        .cloud:nth-child(1) {
-            width: 200px;
-            height: 60px;
-            top: 10%;
-            left: -200px;
-            animation-duration: 50s;
-        }
-
-        .cloud:nth-child(2) {
-            width: 300px;
-            height: 80px;
-            top: 30%;
-            left: -300px;
-            animation-duration: 70s;
-            animation-delay: 10s;
-        }
-
-        .cloud:nth-child(3) {
-            width: 250px;
-            height: 70px;
-            top: 60%;
-            left: -250px;
-            animation-duration: 60s;
-            animation-delay: 20s;
-        }
-
-        .cloud:nth-child(4) {
-            width: 180px;
-            height: 50px;
-            top: 80%;
-            left: -180px;
-            animation-duration: 55s;
-            animation-delay: 15s;
-        }
-
-        @keyframes float {
-            0% {
-                transform: translateX(0);
-            }
-
-            100% {
-                transform: translateX(calc(100vw + 300px));
-            }
-        }
-
-        /* Airplane Animation */
-        .airplane-container {
-            position: absolute;
-            width: 100%;
-            height: 100%;
-            top: 0;
-            left: 0;
-            z-index: 1;
-            pointer-events: none;
-        }
-
-        .airplane {
-            position: absolute;
-            width: 120px;
-            height: 120px;
-            animation: fly 25s infinite linear;
-            filter: drop-shadow(0 10px 20px rgba(14, 165, 233, 0.3));
-        }
-
-        .airplane svg {
-            width: 100%;
-            height: 100%;
-            fill: var(--primary-blue);
-        }
-
-        .airplane-trail {
-            position: absolute;
-            height: 2px;
-            background: linear-gradient(90deg, transparent, rgba(14, 165, 233, 0.4), transparent);
-            width: 200px;
-            top: 50%;
-            left: -200px;
-            animation: trail 25s infinite linear;
-        }
-
-        @keyframes fly {
-            0% {
-                top: -10%;
-                left: -10%;
-                transform: rotate(-45deg);
-            }
-
-            100% {
-                top: 110%;
-                left: 110%;
-                transform: rotate(-45deg);
-            }
-        }
-
-        @keyframes trail {
-            0% {
-                opacity: 0;
-            }
-
-            10% {
-                opacity: 1;
-            }
-
-            90% {
-                opacity: 1;
-            }
-
-            100% {
-                opacity: 0;
-            }
-        }
-
-        /* Login Container - Split Layout */
+        /* Login Container */
         .login-container {
             position: relative;
             z-index: 10;
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(20px);
-            border-radius: 32px;
-            width: 750px;
-            max-width: 90vw;
-            min-height: 450px;
-            box-shadow: 0 20px 60px rgba(14, 165, 233, 0.15), 0 0 0 1px rgba(14, 165, 233, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.8);
-            animation: slideIn 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
+            background: var(--bg-secondary);
+            border-radius: 24px;
+            width: 80vw;
+            max-width: 100%;
+            height: 95vh;
+
+            box-shadow: var(--shadow-xl);
+            border: 1px solid var(--border-default);
             display: flex;
             flex-direction: row;
             overflow: hidden;
+            animation: slideUpFade 0.6s cubic-bezier(0.16, 1, 0.3, 1);
         }
 
-        /* LEFT PANE = BRANDING */
-        /* Updated: Was login-right, now acting as login-left */
+        /* Left Pane - Branding */
         .login-left {
-            flex: 0.8;
-            background: linear-gradient(135deg, var(--soft-white), #E0F2FE);
+            flex: 1;
+            background: linear-gradient(135deg, var(--slate-50), var(--slate-100));
             display: flex;
             flex-direction: column;
             justify-content: center;
             align-items: center;
+            padding: 40px;
+            border-right: 1px solid var(--border-subtle);
             position: relative;
-            z-index: 1;
-            border-right: 1px solid rgba(14, 165, 233, 0.1);
         }
 
-        /* RIGHT PANE = FORM */
-        /* Updated: Was login-left, now acting as login-right */
+        body.dark-theme .login-left {
+            background: linear-gradient(135deg, var(--slate-900), #020617);
+            border-right-color: var(--border-default);
+        }
+
+        /* Right Pane - Form */
         .login-right {
             flex: 1;
-            padding: 40px;
+            padding: 60px;
             display: flex;
             flex-direction: column;
             justify-content: center;
-            background: white;
-            z-index: 2;
+            background: var(--bg-secondary);
         }
 
-        @keyframes slideIn {
-            0% {
+        @keyframes slideUpFade {
+            from {
                 opacity: 0;
-                transform: translateY(30px) scale(0.95);
+                transform: translateY(20px);
             }
 
-            100% {
+            to {
                 opacity: 1;
-                transform: translateY(0) scale(1);
+                transform: translateY(0);
             }
         }
 
@@ -232,324 +95,218 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 12px;
             margin-bottom: 20px;
         }
 
-        .logo-icon {
-            width: 60px;
-            height: 60px;
-            background: linear-gradient(135deg, var(--primary-blue), var(--accent-blue));
-            border-radius: 12px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-family: 'Orbitron', monospace;
-            font-weight: 900;
-            font-size: 24px;
-            color: white;
-            box-shadow: 0 8px 20px var(--shadow-blue);
-            animation: pulse 3s ease-in-out infinite;
-        }
-
-        @keyframes pulse {
-
-            0%,
-            100% {
-                transform: scale(1);
-                box-shadow: 0 8px 20px var(--shadow-blue);
-            }
-
-            50% {
-                transform: scale(1.05);
-                box-shadow: 0 12px 30px rgba(14, 165, 233, 0.4);
-            }
-        }
-
         .company-name {
-            font-family: 'Orbitron', monospace;
-            font-size: 40px;
-            font-weight: 900;
-            background: linear-gradient(135deg, var(--primary-blue), var(--accent-blue));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            letter-spacing: 3px;
-            text-transform: uppercase;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            font-size: 32px;
+            font-weight: 700;
+            color: var(--primary-700);
+            letter-spacing: -0.5px;
         }
 
-        .app-name {
-            font-family: 'Orbitron', monospace;
-            font-size: 20px;
-            font-weight: 700;
-            color: var(--dark-text);
-            letter-spacing: 8px;
-            text-transform: uppercase;
-            margin-top: 10px;
-            opacity: 0.8;
+        body.dark-theme .company-name {
+            color: var(--primary-400);
         }
 
         .login-subtitle {
-            font-size: 16px;
-            color: var(--dark-text);
-            opacity: 0.7;
-            margin-top: 20px;
-            font-weight: 400;
+            font-size: 15px;
+            color: var(--text-secondary);
+            margin-top: 16px;
             text-align: center;
             max-width: 80%;
+            line-height: 1.6;
         }
 
-        /* Form Styles (Now Right Side) */
+        /* Form Elements */
+        .form-title {
+            font-size: 28px;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 12px;
+            text-align: center;
+        }
+
+        .form-desc {
+            text-align: center;
+            color: var(--text-secondary);
+            font-size: 15px;
+            margin-bottom: 40px;
+        }
+
         .login-form {
             display: flex;
             flex-direction: column;
-            gap: 25px;
-            width: 100%;
-        }
-
-        .form-title {
-            font-size: 24px;
-            font-weight: 700;
-            color: var(--dark-text);
-            margin-bottom: 30px;
-            text-align: center;
-        }
-
-        .form-group {
-            position: relative;
-            animation: fadeInUp 0.6s ease-out backwards;
-        }
-
-        .form-group:nth-child(1) {
-            animation-delay: 0.2s;
-        }
-
-        .form-group:nth-child(2) {
-            animation-delay: 0.3s;
-        }
-
-        @keyframes fadeInUp {
-            0% {
-                opacity: 0;
-                transform: translateY(20px);
-            }
-
-            100% {
-                opacity: 1;
-                transform: translateY(0);
-            }
+            gap: 24px;
         }
 
         .form-group label {
             display: block;
-            margin-bottom: 10px;
-            font-size: 14px;
+            margin-bottom: 8px;
+            font-size: 13px;
             font-weight: 600;
-            color: var(--dark-text);
+            color: var(--text-primary);
             text-transform: uppercase;
-            letter-spacing: 1px;
+            letter-spacing: 0.5px;
         }
 
         .input-wrapper {
             position: relative;
         }
 
-        .input-icon {
-            position: absolute;
-            left: 18px;
-            top: 50%;
-            transform: translateY(-50%);
-            color: var(--primary-blue);
-            font-size: 20px;
-            z-index: 2;
-        }
-
         .form-group input {
             width: 100%;
-            padding: 18px 18px 18px 55px;
-            border: 2px solid rgba(14, 165, 233, 0.2);
-            border-radius: 16px;
-            font-size: 16px;
-            font-family: 'Outfit', sans-serif;
-            font-weight: 400;
-            background: white;
-            color: var(--dark-text);
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            padding: 14px 16px 14px 48px;
+            border: 1px solid var(--border-default);
+            border-radius: var(--radius-md);
+            font-size: 15px;
+            font-family: inherit;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            transition: all 0.2s;
             outline: none;
         }
 
         .form-group input:focus {
-            border-color: var(--primary-blue);
-            box-shadow: 0 0 0 4px rgba(14, 165, 233, 0.1);
-            transform: translateY(-2px);
+            border-color: var(--primary-500);
+            box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1);
+            background: var(--bg-secondary);
         }
 
-        .form-group input::placeholder {
-            color: rgba(12, 74, 110, 0.4);
+        .input-icon {
+            position: absolute;
+            left: 16px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-muted);
+            font-size: 18px;
+            transition: color 0.2s;
+            pointer-events: none;
+        }
+
+        .form-group input:focus~.input-icon {
+            color: var(--primary-500);
         }
 
         .login-button {
-            margin-top: 15px;
-            padding: 18px;
-            background: linear-gradient(135deg, var(--primary-blue), var(--accent-blue));
+            margin-top: 10px;
+            width: 100%;
+            padding: 16px;
+            background: linear-gradient(135deg, var(--primary-600), var(--primary-700));
             color: white;
             border: none;
-            border-radius: 16px;
+            border-radius: var(--radius-md);
             font-size: 16px;
             font-weight: 600;
-            font-family: 'Outfit', sans-serif;
-            text-transform: uppercase;
-            letter-spacing: 2px;
             cursor: pointer;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            box-shadow: 0 10px 25px rgba(14, 165, 233, 0.3);
-            animation: fadeInUp 0.6s ease-out 0.4s backwards;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .login-button:before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: -100%;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
-            transition: left 0.5s;
+            transition: all 0.2s;
+            box-shadow: var(--shadow-md);
         }
 
         .login-button:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 15px 35px rgba(14, 165, 233, 0.4);
-        }
-
-        .login-button:hover:before {
-            left: 100%;
-        }
-
-        .login-button:active {
             transform: translateY(-1px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        body.dark-theme .login-button {
+            background: linear-gradient(135deg, var(--primary-700), var(--primary-800));
         }
 
         /* Biometric & Footer */
         .biometric-section {
-            margin-top: 25px;
+            margin-top: 32px;
             text-align: center;
-            animation: fadeInUp 0.6s ease-out 0.5s backwards;
         }
 
         .divider {
             display: flex;
             align-items: center;
-            gap: 15px;
-            margin-bottom: 20px;
+            gap: 16px;
+            margin-bottom: 24px;
         }
 
         .divider-line {
             flex: 1;
             height: 1px;
-            background: linear-gradient(90deg, transparent, rgba(14, 165, 233, 0.3), transparent);
+            background: var(--border-default);
         }
 
         .divider-text {
-            font-size: 13px;
-            color: var(--dark-text);
-            opacity: 0.6;
-            font-weight: 500;
+            font-size: 12px;
+            color: var(--text-muted);
+            font-weight: 600;
+            letter-spacing: 1px;
         }
 
         .fingerprint-button {
-            width: 70px;
-            height: 70px;
+            width: 64px;
+            height: 64px;
             margin: 0 auto;
-            background: linear-gradient(135deg, rgba(14, 165, 233, 0.1), rgba(2, 132, 199, 0.1));
-            border: 2px solid rgba(14, 165, 233, 0.3);
+            background: var(--bg-primary);
+            border: 1px solid var(--border-default);
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
             cursor: pointer;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            position: relative;
-            overflow: hidden;
+            transition: all 0.2s;
+            color: var(--text-muted);
+            box-shadow: var(--shadow-sm);
         }
 
         .fingerprint-button:hover {
-            transform: scale(1.1);
-            border-color: var(--primary-blue);
-            background: linear-gradient(135deg, rgba(14, 165, 233, 0.2), rgba(2, 132, 199, 0.2));
-            box-shadow: 0 10px 25px rgba(14, 165, 233, 0.3);
-        }
-
-        .fingerprint-button:active {
+            border-color: var(--primary-500);
+            color: var(--primary-600);
+            background: var(--primary-50);
             transform: scale(1.05);
+            box-shadow: var(--shadow-md);
         }
 
-        .fingerprint-button.scanning {
-            animation: scan-pulse 1.5s ease-in-out infinite;
-        }
-
-        @keyframes scan-pulse {
-
-            0%,
-            100% {
-                box-shadow: 0 0 0 0 rgba(14, 165, 233, 0.7);
-            }
-
-            50% {
-                box-shadow: 0 0 0 15px rgba(14, 165, 233, 0);
-            }
+        body.dark-theme .fingerprint-button:hover {
+            background: rgba(99, 102, 241, 0.1);
         }
 
         .fingerprint-icon {
-            font-size: 32px;
-            transition: transform 0.3s;
-        }
-
-        .fingerprint-button:hover .fingerprint-icon {
-            transform: scale(1.1);
+            font-size: 28px;
         }
 
         .biometric-label {
             margin-top: 12px;
             font-size: 13px;
-            color: var(--dark-text);
-            opacity: 0.7;
+            color: var(--text-secondary);
             font-weight: 500;
         }
 
         .biometric-status {
-            margin-top: 10px;
-            font-size: 12px;
-            padding: 8px 16px;
+            margin-top: 16px;
+            font-size: 13px;
+            padding: 6px 16px;
             border-radius: 20px;
             display: inline-block;
             font-weight: 500;
         }
 
         .biometric-status.success {
-            background: rgba(34, 197, 94, 0.1);
-            color: #15803d;
+            background: rgba(16, 185, 129, 0.1);
+            color: var(--emerald-500);
         }
 
         .biometric-status.error {
             background: rgba(239, 68, 68, 0.1);
-            color: #991b1b;
+            color: var(--rose-500);
         }
 
         .biometric-status.info {
-            background: rgba(14, 165, 233, 0.1);
-            color: var(--dark-text);
+            background: rgba(99, 102, 241, 0.1);
+            color: var(--primary-500);
         }
 
         .login-footer {
-            margin-top: 35px;
+            margin-top: 40px;
             text-align: center;
             font-size: 13px;
-            color: var(--dark-text);
-            opacity: 0.6;
-            animation: fadeInUp 0.6s ease-out 0.5s backwards;
+            color: var(--text-muted);
         }
 
         .powered-by {
@@ -557,137 +314,100 @@
             align-items: center;
             justify-content: center;
             gap: 6px;
-            margin-top: 12px;
+            margin-top: 8px;
         }
 
         .powered-by span {
             font-weight: 600;
-            color: var(--primary-blue);
+            color: var(--text-secondary);
         }
 
-        .deco-circle {
+        /* Helper Classes */
+        .theme-toggle-fixed {
             position: absolute;
+            top: 24px;
+            right: 24px;
+            width: 44px;
+            height: 44px;
             border-radius: 50%;
-            background: radial-gradient(circle, rgba(14, 165, 233, 0.15), transparent);
-            pointer-events: none;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-default);
+            color: var(--text-secondary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            box-shadow: var(--shadow-md);
+            z-index: 50;
         }
 
-        .deco-circle-1 {
-            width: 300px;
-            height: 300px;
-            top: -150px;
-            right: -150px;
-            animation: float-circle 8s ease-in-out infinite;
+        .theme-toggle-fixed:hover {
+            transform: scale(1.1);
+            color: var(--amber-500);
+            border-color: var(--amber-500);
         }
 
-        .deco-circle-2 {
-            width: 200px;
-            height: 200px;
-            bottom: -100px;
-            left: -100px;
-            animation: float-circle 6s ease-in-out infinite reverse;
-        }
-
-        @keyframes float-circle {
-
-            0%,
-            100% {
-                transform: translate(0, 0);
-            }
-
-            50% {
-                transform: translate(20px, 20px);
-            }
-        }
-
-        /* Responsive Design */
-        @media (max-width: 850px) {
+        /* Responsive */
+        @media (max-width: 900px) {
             .login-container {
                 flex-direction: column;
-                width: 90%;
-                min-height: auto;
-                padding: 0;
+                width: 100%;
+                border-radius: 0;
+                border: none;
+                box-shadow: none;
             }
 
             .login-left {
-                flex: none;
                 padding: 40px 20px;
-                border-right: none;
-                border-bottom: 1px solid rgba(14, 165, 233, 0.1);
+                flex: none;
             }
 
             .login-right {
-                padding: 30px 20px;
-            }
-
-            .company-name {
-                font-size: 36px;
-            }
-
-            .app-name {
-                font-size: 18px;
-                letter-spacing: 6px;
+                padding: 40px 20px;
             }
         }
     </style>
 </head>
 
 <body>
-    <!-- Cloud Background -->
-    <div class="clouds">
-        <div class="cloud"></div>
-        <div class="cloud"></div>
-        <div class="cloud"></div>
-        <div class="cloud"></div>
-    </div>
-
-    <!-- Airplane Animation -->
-    <div class="airplane-container">
-        <div class="airplane-trail"></div>
-        <div class="airplane">
-            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                <path
-                    d="M21 16v-2l-8-5V3.5c0-.83-.67-1.5-1.5-1.5S10 2.67 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z" />
-            </svg>
-        </div>
-    </div>
+    <!-- Theme Toggle -->
+    <button id="themeToggle" class="theme-toggle-fixed" title="Toggle Dark/Light Mode">
+        <i class="fas fa-moon"></i>
+    </button>
 
     <!-- Login Container -->
     <div class="login-container">
-        <div class="deco-circle deco-circle-1"></div>
-        <div class="deco-circle deco-circle-2"></div>
-
         <!-- Left Pane: Branding -->
         <div class="login-left">
-            <div class="login-header">
-                <div class="company-logo">
-                    <div class="logo-icon">V</div>
-                    <h1 class="company-name">VISAD</h1>
-                </div>
-                <div class="app-name">VAULT</div>
-                <p class="login-subtitle">Enterprise Visa Consulting Platform</p>
+            <div class="company-logo">
+                <h1 class="company-name">VisaD Vault</h1>
             </div>
+            <p class="login-subtitle">Secure access to the Enterprise Visa Consulting Platform & Documentation System.
+            </p>
         </div>
 
         <!-- Right Pane: Login Form -->
         <div class="login-right">
             <h2 class="form-title">Welcome Back</h2>
+            <p class="form-desc">Please enter your details to sign in.</p>
+
             <form class="login-form" id="loginForm">
                 <div class="form-group">
                     <label for="username">Username</label>
                     <div class="input-wrapper">
-                        <span class="input-icon">👤</span>
                         <input type="text" id="username" name="username" placeholder="Enter your username" required
                             autocomplete="username">
+                        <i class="fas fa-user input-icon"></i>
                     </div>
                 </div>
 
                 <div class="form-group">
                     <label for="password">Password</label>
                     <div class="input-wrapper">
-                        <span class="input-icon">🔒</span>
                         <input type="password" id="password" name="password" placeholder="Enter your password" required
                             autocomplete="current-password">
+                        <i class="fas fa-lock input-icon"></i>
                     </div>
                 </div>
 
@@ -701,12 +421,12 @@
             <div class="biometric-section">
                 <div class="divider">
                     <div class="divider-line"></div>
-                    <span class="divider-text">OR</span>
+                    <span class="divider-text">OR LOGIN WITH</span>
                     <div class="divider-line"></div>
                 </div>
 
                 <div class="fingerprint-button" id="fingerprintButton" title="Login with Biometrics">
-                    <span class="fingerprint-icon">🔐</span>
+                    <i class="fas fa-fingerprint fingerprint-icon"></i>
                 </div>
                 <div class="biometric-label">Biometric Login</div>
                 <div id="biometricStatus" class="biometric-status" style="display: none;"></div>
@@ -715,6 +435,7 @@
             <div class="login-footer">
                 <div>Sales • Appointments • Documentation</div>
                 <div class="powered-by">
+                    <i class="fas fa-bolt" style="color:var(--primary-500); font-size:10px;"></i>
                     Powered by <span>iwebron</span>
                 </div>
             </div>
@@ -722,6 +443,37 @@
     </div>
 
     <script>
+        // Theme Management
+        (function () {
+            const themeToggle = document.getElementById('themeToggle');
+            const icon = themeToggle.querySelector('i');
+            const body = document.body;
+
+            // Check saved theme
+            const savedTheme = localStorage.getItem('theme');
+            if (savedTheme === 'dark') {
+                body.classList.add('dark-theme');
+                icon.classList.remove('fa-moon');
+                icon.classList.add('fa-sun');
+            }
+
+            themeToggle.addEventListener('click', () => {
+                body.classList.toggle('dark-theme');
+                const isDark = body.classList.contains('dark-theme');
+
+                // Update icon
+                if (isDark) {
+                    icon.classList.remove('fa-moon');
+                    icon.classList.add('fa-sun');
+                    localStorage.setItem('theme', 'dark');
+                } else {
+                    icon.classList.remove('fa-sun');
+                    icon.classList.add('fa-moon');
+                    localStorage.setItem('theme', 'light');
+                }
+            });
+        })();
+
         // Biometric Authentication using Web Authentication API (WebAuthn)
         const BiometricAuth = {
             // Check if biometric authentication is available
@@ -773,7 +525,8 @@
                         url: VaultAuth.API_BASE_URL + '/auth/webauthn/register/start',
                         method: 'POST',
                         contentType: 'application/json',
-                        data: JSON.stringify({ username: username })
+                        data: JSON.stringify({ username: username }),
+                        xhrFields: { withCredentials: true }
                     });
 
                     // 2. Create Credential
@@ -816,7 +569,8 @@
                                 attestationObject: attestationObject,
                                 clientDataJSON: clientDataJSON
                             }
-                        })
+                        }),
+                        xhrFields: { withCredentials: true }
                     });
 
                     localStorage.setItem('biometric_enabled_user', username);
@@ -852,7 +606,8 @@
                         url: VaultAuth.API_BASE_URL + '/auth/webauthn/login/start',
                         method: 'POST',
                         contentType: 'application/json',
-                        data: JSON.stringify({ username: username })
+                        data: JSON.stringify({ username: username }),
+                        xhrFields: { withCredentials: true }
                     });
 
                     const publicKeyOptions = {
@@ -890,7 +645,8 @@
                                 signature: signature,
                                 userHandle: userHandle
                             }
-                        })
+                        }),
+                        xhrFields: { withCredentials: true }
                     });
 
                     if (finishResponse.status === 'success' && finishResponse.token) {
@@ -934,10 +690,15 @@
                 });
             } else {
                 // Check if user has registered biometric
-                const hasRegistered = localStorage.getItem('biometric_credential_id');
+                const hasRegistered = localStorage.getItem('biometric_enabled_user');
                 if (hasRegistered) {
                     fingerprintButton.querySelector('.fingerprint-icon').textContent = '✓';
                     fingerprintButton.title = 'Login with registered biometric';
+
+                    // Auto-trigger biometric login
+                    setTimeout(() => {
+                        BiometricAuth.authenticate();
+                    }, 500);
                 }
             }
         });
@@ -948,7 +709,7 @@
                 return;
             }
 
-            const hasRegistered = localStorage.getItem('biometric_credential_id');
+            const hasRegistered = localStorage.getItem('biometric_enabled_user');
 
             if (hasRegistered) {
                 // Authenticate
@@ -987,7 +748,7 @@
 
                         // Check if biometric is available but NOT registered
                         if (BiometricAuth.isAvailable()) {
-                            const hasRegistered = localStorage.getItem('biometric_credential_id');
+                            const hasRegistered = localStorage.getItem('biometric_enabled_user');
 
                             if (!hasRegistered) {
                                 // Ask user to register
@@ -1007,6 +768,7 @@
                             }
                         }
 
+                        // Redirect
                         // Redirect
                         window.location.href = 'index.html';
                     } else {

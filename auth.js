@@ -4,7 +4,12 @@
  */
 
 const VaultAuth = (function () {
-    const API_BASE_URL = 'https://spring.visad.co.uk/api';
+    let API_BASE_URL;
+    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+        API_BASE_URL = 'http://localhost:8080/api';
+    } else {
+        API_BASE_URL = 'https://spring.visad.co.uk/api';
+    }
     const TOKEN_KEY = 'jwt_token';
     const USER_KEY = 'user_data';
 
@@ -48,7 +53,8 @@ const VaultAuth = (function () {
                 method: 'POST',
                 contentType: 'application/json',
                 data: JSON.stringify({ username, password }),
-                dataType: 'json'
+                dataType: 'json',
+                xhrFields: { withCredentials: true }
             });
 
             if (response.status === 'success' && response.data && response.data.token) {
@@ -98,7 +104,8 @@ const VaultAuth = (function () {
                 url: API_BASE_URL + '/auth/check-session',
                 method: 'GET',
                 headers: { 'Authorization': 'Bearer ' + token },
-                dataType: 'json'
+                dataType: 'json',
+                xhrFields: { withCredentials: true }
             });
 
             // Handle both 'authenticated' and 'loggedin' fields from backend
